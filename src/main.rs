@@ -4,6 +4,8 @@ use std::str::FromStr;
 use file_format::FileFormat;
 use walkdir::{DirEntry, WalkDir};
 
+mod gst;
+
 /// The general media types Ria works with.
 enum MediaType {
     /// Audio files, such as FLAC or MP3.
@@ -40,6 +42,11 @@ fn is_hidden(entry: &DirEntry) -> bool {
 }
 
 fn main() {
+    // Initialize GStreamer.
+    // @TODO: Error handling.
+    gstreamer::init().unwrap();
+
+    // @TODO: Make directories configurable.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
     for entry in walker.filter_entry(|e| !is_hidden(e)) {
         let metadata = entry.as_ref().unwrap().metadata().unwrap();
@@ -61,11 +68,30 @@ fn main() {
                     // @TODO: How to properly detect text?
                 }
                 MediaType::Audio => {
-                    println!(
-                        "AUDIO ({}): {}",
-                        format.media_type(),
+                    // Build an absolute URI as required by GStreamer.
+                    let uri = format!(
+                        "file:///{}/{}",
+                        std::env::current_dir().unwrap().display(),
                         entry.as_ref().unwrap().path().display()
                     );
+
+                    // Use GStreamer Discovered to anaylze music file.
+                    let loop_ = glib::MainLoop::new(None, false);
+                    let timeout = 5 * gstreamer::ClockTime::SECOND;
+                    let discoverer = gstreamer_pbutils::Discoverer::new(timeout).unwrap();
+                    discoverer.connect_discovered(gst::on_discovered);
+                    let loop_clone = loop_.clone();
+                    discoverer.connect_finished(move |_| {
+                        loop_clone.quit();
+                    });
+                    discoverer.start();
+                    discoverer.discover_uri_async(&uri).unwrap();
+
+                    loop_.run();
+
+                    discoverer.stop();
+
+                    println!("------------------")
                 }
                 MediaType::Unknown => {
                     // @TODO: Deal with audio files that we didn't properly detect.

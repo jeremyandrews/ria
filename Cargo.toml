@@ -5,4 +5,7 @@ edition = "2021"
 
 [dependencies]
 file-format = "0.7"
+glib = "0.15"
+gstreamer = "0.18"
+gstreamer-pbutils = "0.18"
 walkdir = "2.3"
