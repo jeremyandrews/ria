@@ -3,9 +3,16 @@
 version = 3
 
 [[package]]
+name = "file-format"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fb46518b6034ba6dbc075ca73277d66cbd488c651c2ccc7255c62b00ce48d24"
+
+[[package]]
 name = "ria"
 version = "0.1.0"
 dependencies = [
+ "file-format",
  "walkdir",
 ]
 
