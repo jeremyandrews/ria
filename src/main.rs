@@ -4,6 +4,7 @@ use std::str::FromStr;
 use file_format::FileFormat;
 use gstreamer_pbutils::DiscovererAudioInfo;
 use gstreamer_pbutils::{prelude::*, DiscovererContainerInfo};
+use percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
 use walkdir::{DirEntry, WalkDir};
 
 /// The general media types Ria works with.
@@ -75,11 +76,16 @@ fn main() {
                         entry.as_ref().unwrap().path().display()
                     );
 
+                    println!("Name: {}", entry.as_ref().unwrap().path().display());
+
                     let timeout: gstreamer::ClockTime = gstreamer::ClockTime::from_seconds(15);
                     let discoverer = gstreamer_pbutils::Discoverer::new(timeout).unwrap();
-                    let info = discoverer.discover_uri(&uri).unwrap();
+                    let info = discoverer
+                        .discover_uri(
+                            &utf8_percent_encode(&uri, DEFAULT_ENCODE_SET).collect::<String>(),
+                        )
+                        .unwrap();
 
-                    println!("Name: {}", entry.as_ref().unwrap().path().display());
                     println!("Duration: {}", info.duration().unwrap());
 
                     if let Some(stream_info) = info.stream_info() {
