@@ -4,7 +4,7 @@ use std::str::FromStr;
 use file_format::FileFormat;
 use gstreamer_pbutils::DiscovererAudioInfo;
 use gstreamer_pbutils::{prelude::*, DiscovererContainerInfo};
-use percent_encoding::{utf8_percent_encode, DEFAULT_ENCODE_SET};
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use walkdir::{DirEntry, WalkDir};
 
 /// The general media types Ria works with.
@@ -47,6 +47,10 @@ fn main() {
     // @TODO: Error handling.
     gstreamer::init().unwrap();
 
+    // Percent-encode all characters except alpha-numberics and "/" to build proper
+    // paths. (@TODO: are there other character to not enacode on Windows?)
+    const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'/');
+
     // @TODO: Make directories configurable.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
     for entry in walker.filter_entry(|e| !is_hidden(e)) {
@@ -70,21 +74,24 @@ fn main() {
                 }
                 MediaType::Audio => {
                     // Build an absolute URI as required by GStreamer.
-                    let uri = format!(
-                        "file:///{}/{}",
+                    let path = format!(
+                        "{}/{}",
                         std::env::current_dir().unwrap().display(),
                         entry.as_ref().unwrap().path().display()
                     );
 
-                    println!("Name: {}", entry.as_ref().unwrap().path().display());
+                    println!("Path: {}", path);
+
+                    let uri = format!(
+                        "file:///{}",
+                        utf8_percent_encode(&path, FRAGMENT).collect::<String>(),
+                    );
+
+                    println!("Uri: {}", uri);
 
                     let timeout: gstreamer::ClockTime = gstreamer::ClockTime::from_seconds(15);
                     let discoverer = gstreamer_pbutils::Discoverer::new(timeout).unwrap();
-                    let info = discoverer
-                        .discover_uri(
-                            &utf8_percent_encode(&uri, DEFAULT_ENCODE_SET).collect::<String>(),
-                        )
-                        .unwrap();
+                    let info = discoverer.discover_uri(&uri).unwrap();
 
                     println!("Duration: {}", info.duration().unwrap());
 
