@@ -2,9 +2,9 @@ use std::error::Error;
 use std::str::FromStr;
 
 use file_format::FileFormat;
+use gstreamer_pbutils::DiscovererAudioInfo;
+use gstreamer_pbutils::{prelude::*, DiscovererContainerInfo};
 use walkdir::{DirEntry, WalkDir};
-
-mod gst;
 
 /// The general media types Ria works with.
 enum MediaType {
@@ -75,23 +75,52 @@ fn main() {
                         entry.as_ref().unwrap().path().display()
                     );
 
-                    // Use GStreamer Discovered to anaylze music file.
-                    let loop_ = glib::MainLoop::new(None, false);
-                    let timeout = 5 * gstreamer::ClockTime::SECOND;
+                    let timeout: gstreamer::ClockTime = gstreamer::ClockTime::from_seconds(15);
                     let discoverer = gstreamer_pbutils::Discoverer::new(timeout).unwrap();
-                    discoverer.connect_discovered(gst::on_discovered);
-                    let loop_clone = loop_.clone();
-                    discoverer.connect_finished(move |_| {
-                        loop_clone.quit();
-                    });
-                    discoverer.start();
-                    discoverer.discover_uri_async(&uri).unwrap();
+                    let info = discoverer.discover_uri(&uri).unwrap();
 
-                    loop_.run();
+                    println!("Name: {}", entry.as_ref().unwrap().path().display());
+                    println!("Duration: {}", info.duration().unwrap());
 
-                    discoverer.stop();
+                    if let Some(stream_info) = info.stream_info() {
+                        let caps_str = if let Some(caps) = stream_info.caps() {
+                            if caps.is_fixed() {
+                                gstreamer_pbutils::pb_utils_get_codec_description(&caps)
+                                    .unwrap_or_else(|_| glib::GString::from("unknown codec"))
+                            } else {
+                                glib::GString::from(caps.to_string())
+                            }
+                        } else {
+                            glib::GString::from("")
+                        };
+                        println!("Format: {}", caps_str);
 
-                    println!("------------------")
+                        if let Some(container_info) =
+                            stream_info.downcast_ref::<DiscovererContainerInfo>()
+                        {
+                            println!(
+                                "@TODO @@@@@@@@@@: Handle containers... {:#?}",
+                                container_info
+                            );
+                        } else if let Some(container_audio) =
+                            stream_info.downcast_ref::<DiscovererAudioInfo>()
+                        {
+                            println!(
+                                "{} channel: {}-bit {} hz",
+                                container_audio.channels(),
+                                container_audio.depth(),
+                                container_audio.sample_rate()
+                            );
+                            println!(
+                                "{} bitrate, {} max bitrate, {:?} language",
+                                container_audio.bitrate(),
+                                container_audio.max_bitrate(),
+                                container_audio.language()
+                            );
+                        } else {
+                            println!("@TODO @@@@@@@@@@: Handle non-audio streams");
+                        }
+                    }
                 }
                 MediaType::Unknown => {
                     // @TODO: Deal with audio files that we didn't properly detect.
@@ -103,6 +132,7 @@ fn main() {
                     );
                 }
             }
+            println!("------------------")
         // Albums are collected together in directories.
         } else if metadata.is_dir() {
             // @TODO: Track directories for visualization, organization, and to assist in
