@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::path::Path;
 use std::str::FromStr;
 
 use file_format::FileFormat;
@@ -44,29 +45,65 @@ fn is_hidden(entry: &DirEntry) -> bool {
 
 fn main() {
     // Initialize GStreamer.
-    // @TODO: Error handling.
-    gstreamer::init().unwrap();
+    gstreamer::init().expect("failed to initialize gstreamer");
 
-    // Percent-encode all characters except alpha-numberics and "/" to build proper
-    // paths. (@TODO: are there other character to not enacode on Windows?)
+    // Percent-encode all characters except alpha-numerics and "/" to build proper
+    // paths.
+    // @TODO: remove characters necessary to navigate Windows paths.
     const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'/');
 
     // @TODO: Make directories configurable.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
     for entry in walker.filter_entry(|e| !is_hidden(e)) {
-        let metadata = entry.as_ref().unwrap().metadata().unwrap();
+        let metadata = match entry.as_ref() {
+            Ok(i) => match i.metadata() {
+                Ok(m) => m,
+                Err(e) => {
+                    // @TODO: Useful logs.
+                    eprintln!("ERROR (metadata): {}", e);
+                    continue;
+                }
+            },
+            Err(e) => {
+                // @TODO: Useful logs.
+                eprintln!("ERROR (walker): {}", e);
+                continue;
+            }
+        };
 
         // Files may be tracks, images, playlists, and more.
         if metadata.is_file() {
-            let format = FileFormat::from_file(entry.as_ref().unwrap().path()).unwrap();
-            let media_type = MediaType::from_str(format.media_type()).unwrap();
+            let format = match FileFormat::from_file(match entry.as_ref() {
+                Ok(i) => i.path(),
+                Err(e) => {
+                    // @TODO: Useful logs.
+                    eprintln!("ERROR (entry.as_ref): {}", e);
+                    continue;
+                }
+            }) {
+                Ok(f) => f,
+                Err(e) => {
+                    // @TODO: Useful logs.
+                    eprintln!("ERROR (FileFormat::from_file): {}", e);
+                    continue;
+                }
+            };
+
+            let media_type = MediaType::from_str(format.media_type()).unwrap_or(MediaType::Unknown);
             match media_type {
                 MediaType::Image => {
                     // @TODO: Associate the image with the album or artist depending on where it is.
                     println!(
                         "IMAGE ({}): {}",
                         format.media_type(),
-                        entry.as_ref().unwrap().path().display()
+                        match entry.as_ref() {
+                            Ok(d) => d.path().display(),
+                            Err(e) => {
+                                // @TODO: Useful logs.
+                                eprintln!("ERROR (entry::as_ref): {}", e);
+                                continue;
+                            }
+                        }
                     );
                 }
                 MediaType::_Text => {
@@ -74,26 +111,66 @@ fn main() {
                 }
                 MediaType::Audio => {
                     // Build an absolute URI as required by GStreamer.
-                    let path = format!(
-                        "{}/{}",
-                        std::env::current_dir().unwrap().display(),
-                        entry.as_ref().unwrap().path().display()
-                    );
+                    let path = Path::new(match &std::env::current_dir() {
+                        Ok(c) => c,
+                        Err(e) => {
+                            // @TODO: Useful logs.
+                            eprintln!("ERROR (current_dir): {}", e);
+                            continue;
+                        }
+                    })
+                    .join(match entry.as_ref() {
+                        Ok(d) => d.path(),
+                        Err(e) => {
+                            // @TODO: Useful logs.
+                            eprintln!("ERROR (entry::as_ref): {}", e);
+                            continue;
+                        }
+                    });
 
-                    println!("Path: {}", path);
+                    println!("Path: {}", path.display());
 
                     let uri = format!(
                         "file:///{}",
-                        utf8_percent_encode(&path, FRAGMENT).collect::<String>(),
+                        utf8_percent_encode(
+                            match path.to_str() {
+                                Some(p) => p,
+                                None => {
+                                    // @TODO: Useful logs.
+                                    eprintln!("ERROR (path.to_str): NONE");
+                                    continue;
+                                }
+                            },
+                            FRAGMENT
+                        )
+                        .collect::<String>(),
                     );
 
                     println!("Uri: {}", uri);
 
                     let timeout: gstreamer::ClockTime = gstreamer::ClockTime::from_seconds(15);
-                    let discoverer = gstreamer_pbutils::Discoverer::new(timeout).unwrap();
-                    let info = discoverer.discover_uri(&uri).unwrap();
+                    let discoverer = match gstreamer_pbutils::Discoverer::new(timeout) {
+                        Ok(d) => d,
+                        Err(e) => {
+                            // @TODO: Useful logs.
+                            eprintln!("ERROR (Discoverer::new): {}", e);
+                            continue;
+                        }
+                    };
+                    let info = match discoverer.discover_uri(&uri) {
+                        Ok(u) => u,
+                        Err(e) => {
+                            // @TODO: Useful logs.
+                            eprintln!("ERROR (discover_uri): {}", e);
+                            continue;
+                        }
+                    };
 
-                    println!("Duration: {}", info.duration().unwrap());
+                    println!(
+                        "Duration: {}",
+                        info.duration().unwrap_or_else(|| gstreamer::ClockTime::NONE
+                            .expect("failed to create empty ClockTime"))
+                    );
 
                     if let Some(stream_info) = info.stream_info() {
                         let caps_str = if let Some(caps) = stream_info.caps() {
@@ -141,7 +218,13 @@ fn main() {
                     println!(
                         "UNKNOWN ({}): {}",
                         format.media_type(),
-                        entry.as_ref().unwrap().path().display()
+                        match entry.as_ref() {
+                            Ok(d) => d.path().display(),
+                            Err(e) => {
+                                eprintln!("ERROR (entry.as_ref): {}", e);
+                                continue;
+                            }
+                        }
                     );
                 }
             }
