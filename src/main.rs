@@ -161,7 +161,7 @@ fn main() {
                         Ok(u) => u,
                         Err(e) => {
                             // @TODO: Useful logs.
-                            eprintln!("ERROR (discover_uri): {}", e);
+                            eprintln!("ERROR (discover_uri): {}: {}", e, uri);
                             continue;
                         }
                     };

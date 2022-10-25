@@ -1,0 +1,36 @@
+version: '3'
+services:
+  database:
+    # Official Postgres image.
+    image: 'postgres:15-bullseye'
+
+    ports:
+      - 5432:5432
+
+    # Allow connecting from host, ie `psql -p5432 -hlocalhost -Uria`
+    expose:
+      - "5432"
+
+    environment:
+      POSTGRES_USER: ria
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ria
+
+    volumes:
+      - ./db-data/:/var/lib/postgresql/data/
+
+  ria:
+    # Official Ubuntu LTS image.
+    image: 'ubuntu:latest'
+    build:
+      context: container
+      dockerfile: Dockerfile
+
+    ports:
+      - "22:2222"
+
+    expose:
+      - "2222"
+
+    volumes:
+      - .:/root/ria/
