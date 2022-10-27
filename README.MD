@@ -43,32 +43,18 @@ root@8a6b1779e907:~/ria# cargo run --release
 
 ## Schema
 
-The following tables track the files Ria is aware of in the filesystem.
+The database schema is controlled in SeaORM, and was built through the numbers files in `migrateion/src`. The tables are created from those files with the following command:
+```
+DATABASE_URL="postgres://ria:password@database/ria" sea-orm-cli migrate refresh
+```
 
-file
- - fid
- - path
- - name
- - extension
- - type
-
-audio
- - aid
- - type
- - channels
- - bits
- - hertz
-
-image
- - iid
- - type
-
-text
- - tid
- - type
-
-Additional tables track:
+Additional tables will be needed to track the following information:
  - artists
  - albums
  - playlists
  - statistics
+
+To connect to the database through the CLI, from bash within the ria image:
+```
+psql --host database --username ria
+```

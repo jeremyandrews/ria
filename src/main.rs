@@ -1,3 +1,6 @@
+mod database;
+mod entities;
+
 use std::error::Error;
 use std::path::Path;
 use std::str::FromStr;
@@ -6,7 +9,10 @@ use file_format::FileFormat;
 use gstreamer_pbutils::DiscovererAudioInfo;
 use gstreamer_pbutils::{prelude::*, DiscovererContainerInfo};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+use sea_orm::*;
 use walkdir::{DirEntry, WalkDir};
+
+use entities::{prelude::*, *};
 
 /// The general media types Ria works with.
 enum MediaType {
@@ -43,7 +49,14 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() -> Result<(), ()> {
+    // Initialize the database.
+    // @TODO: Error handling.
+    let db = database::connection()
+        .await
+        .expect("failed to connect to database");
+
     // Initialize GStreamer.
     gstreamer::init().expect("failed to initialize gstreamer");
 
@@ -129,6 +142,22 @@ fn main() {
                     });
 
                     println!("Path: {}", path.display());
+                    let mut audio = audio::ActiveModel {
+                        // @TODO: replace unwrap() with proper error handling.
+                        path: ActiveValue::Set(path.parent().unwrap().display().to_string()),
+                        // @TODO: replace unwrap() with proper error handling.
+                        name: ActiveValue::Set(path.file_name().unwrap().to_str().unwrap().to_string()),
+                        // @TODO: replace unwrap() with proper error handling.
+                        extension: ActiveValue::Set(path.extension().unwrap().to_str().unwrap().to_string()),
+                        // Format will get replaced later if GStreamer can identify the file type.
+                        format: ActiveValue::Set("UNKNOWN".to_string()),
+                        // @TODO: convert hh:mm:ss:mm to integer.
+                        duration: ActiveValue::Set(0),
+                        channels: ActiveValue::Set(0),
+                        bits: ActiveValue::Set(0),
+                        hertz: ActiveValue::Set(0),
+                        ..Default::default()
+                    };
 
                     let uri = format!(
                         "file:///{}",
@@ -171,6 +200,7 @@ fn main() {
                         info.duration().unwrap_or_else(|| gstreamer::ClockTime::NONE
                             .expect("failed to create empty ClockTime"))
                     );
+                    audio.duration = sea_orm::ActiveValue::Set(info.duration().unwrap().mseconds().try_into().unwrap());
 
                     if let Some(stream_info) = info.stream_info() {
                         let caps_str = if let Some(caps) = stream_info.caps() {
@@ -184,6 +214,7 @@ fn main() {
                             glib::GString::from("")
                         };
                         println!("Format: {}", caps_str);
+                        audio.format = sea_orm::ActiveValue::Set(caps_str.to_string().to_owned());
 
                         if let Some(container_info) =
                             stream_info.downcast_ref::<DiscovererContainerInfo>()
@@ -201,6 +232,24 @@ fn main() {
                                 container_audio.depth(),
                                 container_audio.sample_rate()
                             );
+                            audio.channels = sea_orm::ActiveValue::Set(
+                                container_audio
+                                    .channels()
+                                    .try_into()
+                                    .expect("failed to convert u32 to i32"),
+                            );
+                            audio.bits = sea_orm::ActiveValue::Set(
+                                container_audio
+                                    .depth()
+                                    .try_into()
+                                    .expect("failed to convert u32 to i32"),
+                            );
+                            audio.hertz = sea_orm::ActiveValue::Set(
+                                container_audio
+                                    .sample_rate()
+                                    .try_into()
+                                    .expect("failed to convert u32 to i32"),
+                            );
                             println!(
                                 "{} bitrate, {} max bitrate, {:?} language",
                                 container_audio.bitrate(),
@@ -211,6 +260,11 @@ fn main() {
                             println!("@TODO @@@@@@@@@@: Handle non-audio streams");
                         }
                     }
+                    // @TODO: Error handling.
+                    Audio::insert(audio)
+                        .exec(&db)
+                        .await
+                        .expect("failed to write to database");
                 }
                 MediaType::Unknown => {
                     // @TODO: Deal with audio files that we didn't properly detect.
@@ -235,4 +289,6 @@ fn main() {
             // auto-identifying albums.
         }
     }
+
+    Ok(())
 }

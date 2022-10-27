@@ -1,6 +1,6 @@
 [package]
 name = "ria"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
@@ -9,4 +9,6 @@ glib = "0.15"
 gstreamer = "0.18"
 gstreamer-pbutils = "0.18"
 percent-encoding = "2.2"
+sea-orm = { version = "0.10", features = ["sqlx-postgres", "runtime-tokio-rustls" ] }
+tokio = { version = "1", features = ["full"] }
 walkdir = "2.3"
