@@ -9,5 +9,5 @@ const DB_NAME: &str = "ria";
 #[instrument]
 pub(crate) async fn connection() -> Result<DatabaseConnection, DbErr> {
     event!(Level::TRACE, "connection");
-    Ok(Database::connect(format!("{}/{}", DATABASE_URL, DB_NAME)).await?)
+    Database::connect(format!("{}/{}", DATABASE_URL, DB_NAME)).await
 }

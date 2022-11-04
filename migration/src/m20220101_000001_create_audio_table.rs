@@ -19,6 +19,7 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Audio::Uri).string().not_null().unique_key())
                     .col(ColumnDef::new(Audio::Path).string().not_null())
                     .col(ColumnDef::new(Audio::Name).string().not_null())
                     .col(ColumnDef::new(Audio::Extension).string().not_null())
@@ -44,6 +45,7 @@ impl MigrationTrait for Migration {
 enum Audio {
     Table,
     Aid,
+    Uri,
     Path,
     Name,
     Extension,

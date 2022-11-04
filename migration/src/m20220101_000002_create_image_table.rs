@@ -19,6 +19,7 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
+                    .col(ColumnDef::new(Image::Uri).string().not_null().unique_key())
                     .col(ColumnDef::new(Image::Path).string().not_null())
                     .col(ColumnDef::new(Image::Name).string().not_null())
                     .col(ColumnDef::new(Image::Extension).string().not_null())
@@ -40,6 +41,7 @@ impl MigrationTrait for Migration {
 enum Image {
     Table,
     Iid,
+    Uri,
     Path,
     Name,
     Extension,

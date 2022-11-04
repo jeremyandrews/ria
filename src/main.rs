@@ -149,7 +149,7 @@ async fn main() -> Result<(), ()> {
                     });
 
                     let uri = format!(
-                        "file:///{}",
+                        "file://{}",
                         utf8_percent_encode(
                             match path.to_str() {
                                 Some(p) => p,
@@ -169,7 +169,23 @@ async fn main() -> Result<(), ()> {
                         path.display(),
                         uri
                     );
+
+                    // Check if this audio file is already in the database.
+                    let existing = match Audio::find()
+                        .filter(audio::Column::Uri.contains(&uri))
+                        .one(&db)
+                        .await
+                    {
+                        Ok(e) => e,
+                        Err(e) => {
+                            event!(Level::WARN, "Audio::find() failure: {}", e);
+                            break;
+                        }
+                    };
+
+                    // @TODO: compare to database.
                     let mut audio = audio::ActiveModel {
+                        uri: ActiveValue::Set(uri.clone()),
                         // @TODO: replace unwrap() with proper error handling.
                         path: ActiveValue::Set(path.parent().unwrap().display().to_string()),
                         // @TODO: replace unwrap() with proper error handling.
@@ -270,12 +286,15 @@ async fn main() -> Result<(), ()> {
                             event!(Level::WARN, "@TODO @@@@@@@@@@: Handle non-audio streams");
                         }
                     }
+                    // @TODO: Detect changes to the files, and update as needed.
                     // @TODO: Error handling.
-                    event!(Level::INFO, "Insert Audio File: {:?}", audio);
-                    Audio::insert(audio)
-                        .exec(&db)
-                        .await
-                        .expect("failed to write to database");
+                    if existing.is_none() {
+                        event!(Level::INFO, "Insert Audio File: {:?}", audio);
+                        Audio::insert(audio)
+                            .exec(&db)
+                            .await
+                            .expect("failed to write to database");
+                    }
                 }
                 MediaType::Unknown => {
                     // @TODO: Deal with audio files that we didn't properly detect.
