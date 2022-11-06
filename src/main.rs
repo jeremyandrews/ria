@@ -186,16 +186,27 @@ async fn main() -> Result<(), ()> {
                     // @TODO: compare to database.
                     let mut audio = audio::ActiveModel {
                         uri: ActiveValue::Set(uri.clone()),
-                        // @TODO: replace unwrap() with proper error handling.
-                        path: ActiveValue::Set(path.parent().unwrap().display().to_string()),
-                        // @TODO: replace unwrap() with proper error handling.
-                        name: ActiveValue::Set(
-                            path.file_name().unwrap().to_str().unwrap().to_string(),
-                        ),
-                        // @TODO: replace unwrap() with proper error handling.
-                        extension: ActiveValue::Set(
-                            path.extension().unwrap().to_str().unwrap().to_string(),
-                        ),
+                        path: ActiveValue::Set(match path.parent() {
+                            Some(p) => p.display().to_string(),
+                            None => {
+                                event!(Level::WARN, "path.parent() returned none");
+                                "".to_string()
+                            }
+                        }),
+                        name: ActiveValue::Set(match path.file_name() {
+                            Some(f) => f.to_str().unwrap_or("").to_string(),
+                            None => {
+                                event!(Level::WARN, "path.file_name() returned nothing");
+                                "".to_string()
+                            }
+                        }),
+                        extension: ActiveValue::Set(match path.extension() {
+                            Some(e) => e.to_str().unwrap_or("").to_string(),
+                            None => {
+                                event!(Level::WARN, "path.extension() returned nothing");
+                                "".to_string()
+                            }
+                        }),
                         // The following values will be replaced later if GStreamer is able to
                         // identify the contents of this audio file.
                         format: ActiveValue::Set("UNKNOWN".to_string()),
@@ -228,9 +239,19 @@ async fn main() -> Result<(), ()> {
                         info.duration().unwrap_or_else(|| gstreamer::ClockTime::NONE
                             .expect("failed to create empty ClockTime"))
                     );
-                    audio.duration = sea_orm::ActiveValue::Set(
-                        info.duration().unwrap().mseconds().try_into().unwrap(),
-                    );
+                    audio.duration = sea_orm::ActiveValue::Set(match info.duration() {
+                        Some(d) => match d.seconds().try_into() {
+                            Ok(s) => s,
+                            Err(e) => {
+                                event!(Level::WARN, "mseconds.try_into() failure: {}", e);
+                                continue;
+                            }
+                        },
+                        None => {
+                            event!(Level::WARN, "info.duration() returned nothing");
+                            continue;
+                        }
+                    });
 
                     if let Some(stream_info) = info.stream_info() {
                         let caps_str = if let Some(caps) = stream_info.caps() {
