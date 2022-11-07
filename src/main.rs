@@ -64,8 +64,7 @@ async fn main() -> Result<(), ()> {
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
-    // Initialize the database.
-    // @TODO: Error handling.
+    // Initialize the database. @TODO: Error handling.
     let db = database::connection()
         .await
         .expect("failed to connect to database");
@@ -74,9 +73,10 @@ async fn main() -> Result<(), ()> {
     gstreamer::init().expect("failed to initialize gstreamer");
 
     // Percent-encode all characters except alpha-numerics and "/" to build proper
-    // paths.
-    // @TODO: remove characters necessary to navigate Windows paths.
+    // paths. @TODO: remove characters necessary to navigate Windows paths.
     const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'/');
+
+    let mut all_tags = std::collections::BTreeSet::new();
 
     // @TODO: Make directories configurable.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
@@ -295,14 +295,17 @@ async fn main() -> Result<(), ()> {
                                     .try_into()
                                     .expect("failed to convert u32 to i32"),
                             );
-                            /*
-                            println!(
-                                "{} bitrate, {} max bitrate, {:?} language",
-                                container_audio.bitrate(),
-                                container_audio.max_bitrate(),
-                                container_audio.language()
-                            );
-                             */
+                            // @TODO: explore if there's any value in the following fields:
+                            //   * container_audio.bitrate()
+                            //   * container_audio.max_bitrate()
+                            //   * container_audio.language()
+
+                            if let Some(tags) = info.tags() {
+                                for (tag, values) in tags.iter_generic() {
+                                    event!(Level::DEBUG, "{}: {:?}", tag, values);
+                                    all_tags.insert(tag.to_string());
+                                }
+                            }
                         } else {
                             event!(Level::WARN, "@TODO @@@@@@@@@@: Handle non-audio streams");
                         }
@@ -340,6 +343,8 @@ async fn main() -> Result<(), ()> {
             // auto-identifying albums.
         }
     }
+
+    println!("All tags identified: {:#?}", all_tags);
 
     Ok(())
 }
