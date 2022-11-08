@@ -3,31 +3,30 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "audio")]
+#[sea_orm(table_name = "audiotag")]
 pub struct Model {
     #[sea_orm(primary_key)]
+    pub tid: i32,
     pub aid: i32,
-    #[sea_orm(unique)]
-    pub uri: String,
-    pub path: String,
     pub name: String,
-    pub extension: String,
-    pub format: String,
-    pub duration: i32,
-    pub channels: i32,
-    pub bits: i32,
-    pub hertz: i32,
+    pub value: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::audiotag::Entity")]
-    Audiotag,
+    #[sea_orm(
+        belongs_to = "super::audio::Entity",
+        from = "Column::Aid",
+        to = "super::audio::Column::Aid",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    Audio,
 }
 
-impl Related<super::audiotag::Entity> for Entity {
+impl Related<super::audio::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Audiotag.def()
+        Relation::Audio.def()
     }
 }
 

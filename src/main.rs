@@ -55,6 +55,36 @@ fn is_hidden(entry: &DirEntry) -> bool {
         .unwrap_or(false)
 }
 
+#[instrument]
+fn get_tag_value(t: &str, v: &glib::SendValue) -> Option<String> {
+    event!(Level::TRACE, "get_tag_value");
+
+    let tags_to_store = vec![
+        "audio-codec",
+        "track-number",
+        "datetime",
+        "artist",
+        "album",
+        "title",
+        "genre",
+        "album-artist",
+        "track-count",
+        "album-disc-number",
+        "album-disc-count",
+    ];
+    if tags_to_store.contains(&t) {
+        if let Ok(s) = v.get::<&str>() {
+            Some(s.to_string())
+        } else if let Ok(serialized) = v.serialize() {
+            Some(serialized.into())
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     // Display INFO and higher level logs.
@@ -76,11 +106,9 @@ async fn main() -> Result<(), ()> {
     // paths. @TODO: remove characters necessary to navigate Windows paths.
     const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'/');
 
-    let mut all_tags = std::collections::BTreeSet::new();
-
     // @TODO: Make directories configurable.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
-    for entry in walker.filter_entry(|e| !is_hidden(e)) {
+    for (counter, entry) in walker.filter_entry(|e| !is_hidden(e)).enumerate() {
         let metadata = match entry.as_ref() {
             Ok(i) => match i.metadata() {
                 Ok(m) => m,
@@ -132,6 +160,9 @@ async fn main() -> Result<(), ()> {
                     // @TODO: How to properly detect text?
                 }
                 MediaType::Audio => {
+                    // Store any tags that are found in the audio file.
+                    let mut tags = None;
+
                     // Build an absolute URI as required by GStreamer.
                     let path = Path::new(match &std::env::current_dir() {
                         Ok(c) => c,
@@ -300,12 +331,8 @@ async fn main() -> Result<(), ()> {
                             //   * container_audio.max_bitrate()
                             //   * container_audio.language()
 
-                            if let Some(tags) = info.tags() {
-                                for (tag, values) in tags.iter_generic() {
-                                    event!(Level::DEBUG, "{}: {:?}", tag, values);
-                                    all_tags.insert(tag.to_string());
-                                }
-                            }
+                            // Store any tags that may be in the audio file.
+                            tags = info.tags();
                         } else {
                             event!(Level::WARN, "@TODO @@@@@@@@@@: Handle non-audio streams");
                         }
@@ -314,10 +341,32 @@ async fn main() -> Result<(), ()> {
                     // @TODO: Error handling.
                     if existing.is_none() {
                         event!(Level::INFO, "Insert Audio File: {:?}", audio);
-                        Audio::insert(audio)
+                        let new_audio = Audio::insert(audio)
                             .exec(&db)
                             .await
-                            .expect("failed to write to database");
+                            .expect("failed to write audio details to database");
+
+                        if let Some(tags) = tags {
+                            for (name, values) in tags.iter_generic() {
+                                event!(Level::DEBUG, "tag {}: {:?}", name, values);
+                                for value in values {
+                                    if let Some(s) = get_tag_value(name, value) {
+                                        let tag = audiotag::ActiveModel {
+                                            aid: ActiveValue::Set(new_audio.last_insert_id),
+                                            name: ActiveValue::Set(name.to_string()),
+                                            value: ActiveValue::Set(s),
+                                            ..Default::default()
+                                        };
+                                        Audiotag::insert(tag)
+                                            .exec(&db)
+                                            .await
+                                            .expect("failed to write tag to database");
+                                    }
+                                }
+                            }
+                        }
+
+                        // @TODO: now store the tags
                     }
                 }
                 MediaType::Unknown => {
@@ -342,9 +391,12 @@ async fn main() -> Result<(), ()> {
             // @TODO: Track directories for visualization, organization, and to assist in
             // auto-identifying albums.
         }
-    }
 
-    println!("All tags identified: {:#?}", all_tags);
+        // @TODO: Make this optional/configurable.
+        if counter > 10_000 {
+            break;
+        }
+    }
 
     Ok(())
 }

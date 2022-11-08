@@ -3,4 +3,5 @@
 pub mod prelude;
 
 pub mod audio;
+pub mod audiotag;
 pub mod image;
