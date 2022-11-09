@@ -452,12 +452,23 @@ async fn main() -> Result<(), ()> {
                                                     .expect("failed to write artist to database");
                                                 new_artist.last_insert_id
                                             };
+
+                                            let audio_artist = audioartist::ActiveModel {
+                                                audio_aid: ActiveValue::Set(
+                                                    new_audio.last_insert_id,
+                                                ),
+                                                artist_aid: ActiveValue::Set(artist_id),
+                                                ..Default::default()
+                                            };
                                             event!(
-                                                Level::WARN,
-                                                "inserted artist {} with id {}",
-                                                s,
-                                                artist_id
+                                                Level::DEBUG,
+                                                "Insert AudioArtist: {:?}",
+                                                audio_artist
                                             );
+                                            Audioartist::insert(audio_artist)
+                                                .exec(&db)
+                                                .await
+                                                .expect("failed to write audio_artist to database");
                                         }
                                     }
                                 }
