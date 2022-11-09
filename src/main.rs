@@ -410,7 +410,7 @@ async fn main() -> Result<(), ()> {
                                         let tag = audiotag::ActiveModel {
                                             aid: ActiveValue::Set(new_audio.last_insert_id),
                                             name: ActiveValue::Set(name.to_string()),
-                                            value: ActiveValue::Set(s),
+                                            value: ActiveValue::Set(s.to_string()),
                                             ..Default::default()
                                         };
                                         event!(Level::DEBUG, "Insert Audiotag: {:?}", tag);
@@ -418,6 +418,47 @@ async fn main() -> Result<(), ()> {
                                             .exec(&db)
                                             .await
                                             .expect("failed to write tag to database");
+
+                                        // @TODO: @REMOVEME, instead query MusicBrainz in a queue
+                                        // and properly populate this information. -- this is just
+                                        // for testing the database schema.
+                                        if name == "artist" {
+                                            let existing_artist = match Artist::find()
+                                                .filter(artist::Column::Name.contains(&s))
+                                                .one(&db)
+                                                .await
+                                            {
+                                                Ok(e) => e,
+                                                Err(e) => {
+                                                    event!(
+                                                        Level::WARN,
+                                                        "Artist::find() failure: {}",
+                                                        e
+                                                    );
+                                                    break;
+                                                }
+                                            };
+                                            let artist_id = if let Some(artist) = existing_artist {
+                                                artist.aid
+                                            } else {
+                                                let artist = artist::ActiveModel {
+                                                    name: ActiveValue::Set(s.to_string()),
+                                                    ..Default::default()
+                                                };
+                                                event!(Level::DEBUG, "Insert Artist: {:?}", artist);
+                                                let new_artist = Artist::insert(artist)
+                                                    .exec(&db)
+                                                    .await
+                                                    .expect("failed to write artist to database");
+                                                new_artist.last_insert_id
+                                            };
+                                            event!(
+                                                Level::WARN,
+                                                "inserted artist {} with id {}",
+                                                s,
+                                                artist_id
+                                            );
+                                        }
                                     }
                                 }
                             }

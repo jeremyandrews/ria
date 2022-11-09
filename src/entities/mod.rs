@@ -2,6 +2,8 @@
 
 pub mod prelude;
 
+pub mod artist;
 pub mod audio;
+pub mod audioartist;
 pub mod audiotag;
 pub mod image;

@@ -2,35 +2,25 @@
 
 use sea_orm::entity::prelude::*;
 
+use crate::database::{ArtistType, Gender};
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "audio")]
+#[sea_orm(table_name = "artist")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub aid: i32,
-    #[sea_orm(unique)]
-    pub uri: String,
-    pub path: String,
     pub name: String,
-    pub extension: String,
-    pub format: String,
-    pub duration: i32,
-    pub channels: i32,
-    pub bits: i32,
-    pub hertz: i32,
+    pub sort_name: Option<String>,
+    pub artist_type: Option<ArtistType>,
+    pub gender: Option<Gender>,
+    pub area: Option<String>,
+    pub disambiguation_comment: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::audiotag::Entity")]
-    Audiotag,
     #[sea_orm(has_many = "super::audioartist::Entity")]
     Audioartist,
-}
-
-impl Related<super::audiotag::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Audiotag.def()
-    }
 }
 
 impl Related<super::audioartist::Entity> for Entity {

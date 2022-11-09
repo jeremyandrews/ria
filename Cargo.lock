@@ -1149,7 +1149,7 @@ dependencies = [
 
 [[package]]
 name = "ria"
-version = "0.1.3"
+version = "0.1.4"
 dependencies = [
  "file-format",
  "glib",
@@ -1157,6 +1157,7 @@ dependencies = [
  "gstreamer-pbutils",
  "percent-encoding",
  "sea-orm",
+ "sea-query",
  "tokio",
  "tracing",
  "tracing-subscriber",
