@@ -65,6 +65,11 @@ And entity files are then auto-generated in `src/entities/` with the following c
 sea-orm-cli generate entity -u postgres://ria:password@database/ria -o src/entities
 ```
 
+To drop the database (deleting everything) and reload it with the latest schema:
+```
+DATABASE_URL="postgres://ria:password@database/ria" sea-orm-cli migrate fresh
+```
+
 (If not using the provided docker image, you may need to run `cargo install sea-orm-cli` first and resolve any dependency issues.)
 
 Additional tables will be needed to track the following information:

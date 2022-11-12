@@ -1,0 +1,1621 @@
+musicbrainz
+
+let query = Artist::query_builder()
+        .name("Bob Dylan")
+        .build();
+    let query_result = Artist::search(query).execute()?;
+
+2022-11-10T14:00:20.102058Z  WARN ria: SearchResult {
+    created: 2022-11-10T13:58:14.553,
+    count: 2227,
+    offset: 0,
+    entities: [
+        Artist {
+            id: "72c536dc-7137-4477-a521-567eeb840fa8",
+            name: "Bob Dylan",
+            sort_name: "Dylan, Bob",
+            disambiguation: "",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: Some(
+                Area {
+                    id: "489ce91b-6658-3307-9877-795b68554c98",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "United States",
+                    sort_name: "United States",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: Some(
+                [
+                    Alias {
+                        name: "Боб Дилан",
+                        sort_name: "Дилан, Боб",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Bob Landy",
+                        sort_name: "Landy, Bob",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Boo Wilbury",
+                        sort_name: "Wilbury, Boo",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Robert Allen Zimmerman",
+                        sort_name: "Zimmerman, Robert Allen",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Legal name",
+                        ),
+                        primary: None,
+                        type_id: Some(
+                            "d4dcd0c0-b341-3612-a332-c0ce797b25cf",
+                        ),
+                    },
+                    Alias {
+                        name: "Bob D",
+                        sort_name: "Bob D",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Search hint",
+                        ),
+                        primary: None,
+                        type_id: Some(
+                            "1937e404-b981-3cb7-8151-4c86ebfc8d8e",
+                        ),
+                    },
+                    Alias {
+                        name: "Dylan",
+                        sort_name: "Dylan",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Jack Frost",
+                        sort_name: "Jack Frost",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Artist name",
+                        ),
+                        primary: None,
+                        type_id: Some(
+                            "894afba6-2816-3c24-8072-eadb66bd04bc",
+                        ),
+                    },
+                    Alias {
+                        name: "Blind Boy Grunt",
+                        sort_name: "Grunt, Blind Boy",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Artist name",
+                        ),
+                        primary: None,
+                        type_id: Some(
+                            "894afba6-2816-3c24-8072-eadb66bd04bc",
+                        ),
+                    },
+                    Alias {
+                        name: "Bobby Zimmerman",
+                        sort_name: "Bobby Zimmerman",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Robert Dylan",
+                        sort_name: "Robert Dylan",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Robert Zimmerman",
+                        sort_name: "Robert Zimmerman",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "DYLYN Bob",
+                        sort_name: "DYLYN Bob",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Boy Dylan",
+                        sort_name: "Boy Dylan",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Lucky Wilbury",
+                        sort_name: "Wilbury, Lucky",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                    Alias {
+                        name: "Bob Dylan",
+                        sort_name: "Dylan, Bob",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Artist name",
+                        ),
+                        primary: Some(
+                            true,
+                        ),
+                        type_id: Some(
+                            "894afba6-2816-3c24-8072-eadb66bd04bc",
+                        ),
+                    },
+                ],
+            ),
+            tags: Some(
+                [
+                    Tag {
+                        name: "rock",
+                        count: 6,
+                    },
+                    Tag {
+                        name: "folk",
+                        count: 4,
+                    },
+                    Tag {
+                        name: "american",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "blues",
+                        count: 2,
+                    },
+                    Tag {
+                        name: "singer-songwriter",
+                        count: 2,
+                    },
+                    Tag {
+                        name: "country",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "folk rock",
+                        count: 7,
+                    },
+                    Tag {
+                        name: "blues rock",
+                        count: 6,
+                    },
+                    Tag {
+                        name: "country rock",
+                        count: 3,
+                    },
+                    Tag {
+                        name: "classic rock",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "1980s",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "1990s",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "1970s",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "icon",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "1960s",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "2000s",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "pop rock",
+                        count: 3,
+                    },
+                    Tag {
+                        name: "contemporary folk",
+                        count: 3,
+                    },
+                    Tag {
+                        name: "classic pop and rock",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "rare",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "siple twist of fate",
+                        count: -1,
+                    },
+                    Tag {
+                        name: "1 13 165900 150 7672 22647 34612 48720 59280 74602 87545 95495 107182 131087 141522 153710",
+                        count: -2,
+                    },
+                    Tag {
+                        name: "teater konsert",
+                        count: -1,
+                    },
+                    Tag {
+                        name: "singer/songwriter",
+                        count: 2,
+                    },
+                    Tag {
+                        name: "pop/rock",
+                        count: 0,
+                    },
+                    Tag {
+                        name: "dylan bootleg series",
+                        count: -2,
+                    },
+                    Tag {
+                        name: "pledging my time",
+                        count: -1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: Some(
+                "US",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: Some(
+                        1941-05-24,
+                    ),
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "ddac37af-7e70-4014-96e3-69894ee9646e",
+            name: "N.A.M.E",
+            sort_name: "N.A.M.E",
+            disambiguation: "Grindcore band from California",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: Some(
+                        1999-01-01,
+                    ),
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "c0ef661a-571b-44fd-996c-a4be28afb86e",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "Jørgen Johnsen",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "31129097-2a28-4ee6-88e6-fba7aaebc81e",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "Italian rock band",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "a61fcba5-f0a8-4c81-a188-d70acedfd8c5",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "Clara Moroni, Eurobeat",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "d5b3c675-a283-41b6-8e10-0b6ce8c79b6e",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "Jérémy Olive",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: Some(
+                Area {
+                    id: "0f6b6209-9dc7-4e08-90d6-f91fb71330b4",
+                    area_type: Some(
+                        "City",
+                    ),
+                    type_id: Some(
+                        "6fd8f29a-3d0a-32fc-980d-ea697b69da78",
+                    ),
+                    disambiguation: "",
+                    name: "Avignon",
+                    sort_name: "Avignon",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "98e14fcf-a93b-47e5-83c6-ee1683b9a0bd",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "Columbian reggae",
+            artist_type: None,
+            gender: None,
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "a7617043-0bfe-41b1-af13-6526d3a3e4dc",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "Japanese synth-pop",
+            artist_type: None,
+            gender: None,
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "d71a31b4-4aa7-4cfc-aebc-370b0b1aafa4",
+            name: "@Name",
+            sort_name: "Name",
+            disambiguation: "Japanse rapper",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "a5df4df5-2602-44b5-989c-cbdb73f166b7",
+            name: "Name",
+            sort_name: "Name",
+            disambiguation: "appears on Peace Power by Malik B",
+            artist_type: None,
+            gender: None,
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "f353b91a-2d13-4254-97d1-17ab9599e6e2",
+            name: "No Name",
+            sort_name: "No Name",
+            disambiguation: "Slovak pop band",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "eb52ca74-dd11-37a1-a3fa-154430bf2df2",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "Slovakia",
+                    sort_name: "Slovakia",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: Some(
+                                1993-01-01,
+                            ),
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: Some(
+                [
+                    Alias {
+                        name: "NoName",
+                        sort_name: "NoName",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: None,
+                        primary: None,
+                        type_id: None,
+                    },
+                ],
+            ),
+            tags: Some(
+                [
+                    Tag {
+                        name: "slovak",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "rock",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "pop",
+                        count: 1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: Some(
+                "SK",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "cf94ccc7-21ea-4ba8-a298-9e348032c904",
+            name: "Name Impending",
+            sort_name: "Name Impending",
+            disambiguation: "",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: Some(
+                Area {
+                    id: "71bbafaa-e825-3e15-8ca9-017dcad1748b",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "Canada",
+                    sort_name: "Canada",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: Some(
+                [
+                    Alias {
+                        name: "Tyr Johnstone",
+                        sort_name: "Johnstone, Tyr",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Legal name",
+                        ),
+                        primary: None,
+                        type_id: Some(
+                            "d4dcd0c0-b341-3612-a332-c0ce797b25cf",
+                        ),
+                    },
+                ],
+            ),
+            tags: None,
+            genres: None,
+            rating: None,
+            country: Some(
+                "CA",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "7a4d6605-1db8-4aff-9fd5-0177d760c08d",
+            name: "Name UL",
+            sort_name: "Name UL",
+            disambiguation: "New Zealand hip hop (Emanuel Psathas)",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: Some(
+                Area {
+                    id: "5aa4734b-6d95-47ef-aabd-1be461923d89",
+                    area_type: Some(
+                        "Subdivision",
+                    ),
+                    type_id: Some(
+                        "fd3d44c5-80a1-3842-9745-2c4972d35afa",
+                    ),
+                    disambiguation: "",
+                    name: "Wellington",
+                    sort_name: "Wellington",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: Some(
+                [
+                    Alias {
+                        name: "Emanuel Psathas",
+                        sort_name: "Psathas, Emanuel",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Legal name",
+                        ),
+                        primary: None,
+                        type_id: Some(
+                            "d4dcd0c0-b341-3612-a332-c0ce797b25cf",
+                        ),
+                    },
+                ],
+            ),
+            tags: Some(
+                [
+                    Tag {
+                        name: "hip hop",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "new zealand",
+                        count: 1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: Some(
+                        1996-05-21,
+                    ),
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "0947fcb0-9810-4018-ad44-dee1a118c6cb",
+            name: "No Name",
+            sort_name: "No Name",
+            disambiguation: "Group from Luxembourg",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "563d21b7-4a8e-35e2-83a7-7804baefbfa7",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "Luxembourg",
+                    sort_name: "Luxembourg",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: Some(
+                [
+                    Tag {
+                        name: "progressive rock",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "neo-prog",
+                        count: 1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: Some(
+                "LU",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: Some(
+                        true,
+                    ),
+                    begin: Some(
+                        1988-01-01,
+                    ),
+                    end: Some(
+                        2011-02-01,
+                    ),
+                },
+            ),
+        },
+        Artist {
+            id: "bc256cce-a3ae-4e5e-9de4-8b7eb5978445",
+            name: "Jack Name",
+            sort_name: "Name, Jack",
+            disambiguation: "",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: Some(
+                Area {
+                    id: "1f40c6e1-47ba-4e35-996f-fe6ee5840e62",
+                    area_type: Some(
+                        "City",
+                    ),
+                    type_id: Some(
+                        "6fd8f29a-3d0a-32fc-980d-ea697b69da78",
+                    ),
+                    disambiguation: "",
+                    name: "Los Angeles",
+                    sort_name: "Los Angeles",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: Some(
+                [
+                    Tag {
+                        name: "rock",
+                        count: 1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "5a4c4813-b5ee-47ba-beb5-c480333fb8e4",
+            name: "NO NAME",
+            sort_name: "NO NAME",
+            disambiguation: "AKB0048",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "2db42837-c832-3c27-b4a3-08198f75693c",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "Japan",
+                    sort_name: "Japan",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: Some(
+                [
+                    Tag {
+                        name: "related-akb48",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "fixme character group with non-character members",
+                        count: 1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: Some(
+                "JP",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: Some(
+                        true,
+                    ),
+                    begin: Some(
+                        2012-02-01,
+                    ),
+                    end: Some(
+                        2013-04-01,
+                    ),
+                },
+            ),
+        },
+        Artist {
+            id: "2cbab299-ed33-48cb-8a22-cc410a292b43",
+            name: "Name Taken",
+            sort_name: "Name Taken",
+            disambiguation: "",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "489ce91b-6658-3307-9877-795b68554c98",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "United States",
+                    sort_name: "United States",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: Some(
+                [
+                    Tag {
+                        name: "indie rock",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "emo",
+                        count: 1,
+                    },
+                    Tag {
+                        name: "pop punk",
+                        count: 1,
+                    },
+                ],
+            ),
+            genres: None,
+            rating: None,
+            country: Some(
+                "US",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: Some(
+                        true,
+                    ),
+                    begin: Some(
+                        2000-01-01,
+                    ),
+                    end: Some(
+                        2007-01-01,
+                    ),
+                },
+            ),
+        },
+        Artist {
+            id: "1472411a-ed98-4a84-aab8-a652e5a282d5",
+            name: "The Name",
+            sort_name: "Name, The",
+            disambiguation: "New wave/indie rock band, UK",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "8a754a16-0027-3a29-b6d7-2b40ea0481ed",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "United Kingdom",
+                    sort_name: "United Kingdom",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: Some(
+                "GB",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "6cd6b61e-ebca-4868-a9a5-bf058ce60a97",
+            name: "My Name",
+            sort_name: "My Name",
+            disambiguation: "",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "489ce91b-6658-3307-9877-795b68554c98",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "United States",
+                    sort_name: "United States",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: Some(
+                "US",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "a0dedd56-290c-4d11-9cbc-85890c1128fb",
+            name: "(K)NoW_NAME",
+            sort_name: "KNoW NAME",
+            disambiguation: "",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "2db42837-c832-3c27-b4a3-08198f75693c",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "Japan",
+                    sort_name: "Japan",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: Some(
+                [
+                    Alias {
+                        name: "(K)NoW_NAME",
+                        sort_name: "ノウネイム",
+                        ended: None,
+                        begin: None,
+                        end: None,
+                        aliase_type: Some(
+                            "Artist name",
+                        ),
+                        primary: Some(
+                            true,
+                        ),
+                        type_id: Some(
+                            "894afba6-2816-3c24-8072-eadb66bd04bc",
+                        ),
+                    },
+                ],
+            ),
+            tags: None,
+            genres: None,
+            rating: None,
+            country: Some(
+                "JP",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: Some(
+                        2015-11-01,
+                    ),
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "9866d5d4-f50d-4d52-a7df-31c0855ae480",
+            name: "Lost Name",
+            sort_name: "Lost Name",
+            disambiguation: "",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "89bbbab6-72de-43eb-81ba-e620ab207008",
+                    area_type: Some(
+                        "City",
+                    ),
+                    type_id: Some(
+                        "6fd8f29a-3d0a-32fc-980d-ea697b69da78",
+                    ),
+                    disambiguation: "",
+                    name: "Munich",
+                    sort_name: "Munich",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "fb1ad7b1-482a-42ab-8354-d7636211c9da",
+            name: "The Name",
+            sort_name: "Name, The",
+            disambiguation: "French electro/disco/rock duo",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "08310658-51eb-3801-80de-5a0739207115",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "France",
+                    sort_name: "France",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: Some(
+                "FR",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "9850e20d-4327-46d2-a47d-5590ec5ab4c4",
+            name: "No Name",
+            sort_name: "No Name",
+            disambiguation: "EBM/electro",
+            artist_type: None,
+            gender: None,
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "2d0eb2ba-972e-4686-9bd0-6e7c14b58aae",
+            name: "No Name",
+            sort_name: "No Name",
+            disambiguation: "Poka Michelson, hardcore techno produced on Amiga",
+            artist_type: Some(
+                Person,
+            ),
+            gender: Some(
+                Other,
+            ),
+            area: None,
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: None,
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+        Artist {
+            id: "319f64cd-d34a-4222-b435-0d007afb0a5f",
+            name: "No Name",
+            sort_name: "No Name",
+            disambiguation: "Danish rock band",
+            artist_type: Some(
+                Group,
+            ),
+            gender: None,
+            area: Some(
+                Area {
+                    id: "4757b525-2a60-324a-b060-578765d2c993",
+                    area_type: Some(
+                        "Country",
+                    ),
+                    type_id: Some(
+                        "06dd0ae4-8c74-30bb-b43d-95dcedf961de",
+                    ),
+                    disambiguation: "",
+                    name: "Denmark",
+                    sort_name: "Denmark",
+                    iso_3166_1_codes: None,
+                    life_span: Some(
+                        LifeSpan {
+                            ended: None,
+                            begin: None,
+                            end: None,
+                        },
+                    ),
+                    tags: None,
+                    aliases: None,
+                    genres: None,
+                    annotation: None,
+                },
+            ),
+            begin_area: None,
+            relations: None,
+            releases: None,
+            works: None,
+            release_groups: None,
+            recordings: None,
+            aliases: None,
+            tags: None,
+            genres: None,
+            rating: None,
+            country: Some(
+                "DK",
+            ),
+            annotation: None,
+            life_span: Some(
+                LifeSpan {
+                    ended: None,
+                    begin: None,
+                    end: None,
+                },
+            ),
+        },
+    ],
+}
