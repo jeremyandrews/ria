@@ -1,0 +1,5 @@
+# Ignore the PostgreSQL database.
+db-data/
+
+# Ignore the ria.log file.
+ria.log

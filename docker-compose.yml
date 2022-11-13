@@ -23,14 +23,8 @@ services:
     # Official Ubuntu LTS image.
     image: 'ubuntu:latest'
     build:
-      context: container
+      context: .
       dockerfile: Dockerfile
 
-    ports:
-      - "22:2222"
-
-    expose:
-      - "2222"
-
     volumes:
-      - .:/root/ria/
+     - .:/app/

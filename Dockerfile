@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install dependencies.
 RUN apt-get -y update && \
   apt-get -y upgrade && \
-  apt-get install -y openssh-server sudo build-essential git curl wget \
+  apt-get install -y coreutils sudo build-essential git curl wget \
   vim libssl-dev iputils-ping postgresql-client \
   libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
   libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base \
@@ -24,8 +24,9 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Install sea-orm-cli.
 RUN cargo install sea-orm-cli
 
-# Setup SSH
-RUN    mkdir /var/run/sshd
-EXPOSE 22
+# Build Ria
+WORKDIR /app
+COPY . .
+RUN touch /app/ria.log && cargo build --release
 
-CMD ["/usr/sbin/sshd", "-D"]
+CMD /usr/bin/tail -f /app/ria.log

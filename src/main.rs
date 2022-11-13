@@ -14,7 +14,8 @@ use once_cell::sync::OnceCell;
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use sea_orm::*;
 use tracing::{event, instrument, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_subscriber::fmt::writer::MakeWriterExt;
 use walkdir::{DirEntry, WalkDir};
 
 use entities::{prelude::*, *};
@@ -63,12 +64,13 @@ fn is_hidden(entry: &DirEntry) -> bool {
 
 #[tokio::main]
 async fn main() -> Result<(), ()> {
-    // Display INFO and higher level logs.
-    // @TODO: Make this configurable/dynamic.
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::INFO)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    // Log all events to a file. @TODO: add configurable rolling file support.
+    let logfile = RollingFileAppender::new(Rotation::NEVER, "./", "ria.log");
+    // Log `INFO` and above to stdout.
+    let stdout = std::io::stdout.with_max_level(tracing::Level::INFO);
+    tracing_subscriber::fmt()
+        .with_writer(stdout.and(logfile))
+        .init();
 
     // Initialize the database. @TODO: Error handling.
     let db = database::connection()
@@ -386,7 +388,10 @@ async fn main() -> Result<(), ()> {
                                                     .execute()
                                                     .unwrap();
 
-                                                event!(Level::WARN, "{:#?}", query_result);
+                                                
+                                                if let Some(result) = query_results.first() {
+                                                    event!(Level::WARN, "{:#?}", result);
+                                                }
                                                 std::process::exit(1);
 
                                                 let artist = artist::ActiveModel {
