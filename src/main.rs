@@ -388,10 +388,19 @@ async fn main() -> Result<(), ()> {
                                                     .execute()
                                                     .unwrap();
 
-                                                
-                                                if let Some(result) = query_results.first() {
+                                                if let Some(result) =
+                                                    // For now assume the first matching artist.
+                                                    query_result.entities.iter().nth(0)
+                                                {
                                                     event!(Level::WARN, "{:#?}", result);
+                                                } else {
+                                                    event!(
+                                                        Level::WARN,
+                                                        "{} not found in MusicBrainz",
+                                                        &s
+                                                    );
                                                 }
+                                                // @TODO: Store the results.
                                                 std::process::exit(1);
 
                                                 let artist = artist::ActiveModel {
