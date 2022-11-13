@@ -21,12 +21,13 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 # Add cargo the path.
 ENV PATH="/root/.cargo/bin:${PATH}"
 
+WORKDIR /app
+COPY . .
+
 # Install sea-orm-cli.
 RUN cargo install sea-orm-cli
 
 # Build Ria
-WORKDIR /app
-COPY . .
 RUN touch /app/ria.log && cargo build --release
 
 CMD /usr/bin/tail -f /app/ria.log
