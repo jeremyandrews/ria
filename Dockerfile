@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND noninteractive
 # Install dependencies.
 RUN apt-get -y update && \
   apt-get -y upgrade && \
-  apt-get install -y coreutils sudo build-essential git curl wget \
+  apt-get install -y sudo build-essential git curl wget \
   vim libssl-dev iputils-ping postgresql-client \
   libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
   libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base \
@@ -21,11 +21,11 @@ RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 # Add cargo the path.
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-WORKDIR /app
-COPY . .
-
 # Install sea-orm-cli.
 RUN cargo install sea-orm-cli
+
+WORKDIR /app
+COPY . .
 
 # Build Ria
 RUN touch /app/ria.log && cargo build --release
