@@ -15,9 +15,10 @@ An audio management system.
 These are generally intended to be temporary assumptions, fixed/removed as development matures.
 
  * All music lives in `music/` within the `ria` directory (this can be a symbolic link)
- * Primary focus is on `flac` music files
+ * Primary focus is on `flac` music files, secondary will be `mp3`
  * PostgreSQL database (intended to also support MySQL or SQLite, through SeaORM -- I'm also still experimenting with using an ORM versus raw queries)
- * Runs on Debian/Ubuntu Linux (see `docker-compose.yml` and `container/Dockerfile`)
+    * currently assumes database named `ria`, user named `ria`, and password of `password`
+ * Runs on Debian/Ubuntu Linux (see `docker-compose.yml` and `Dockerfile`)
 
 
 ## Installation Notes
@@ -42,14 +43,18 @@ docker-compose up --build
 
 It will take some time to download and install all dependencies. Once complete, you can connect into the `ria_ria` container as follows:
 ```bash
-docker exec -it `docker ps | grep ria_ria | awk '{print $1}'` /bin/bash
+docker exec -it `docker ps | grep ria-ria | awk '{print $1}'` /bin/bash
 ```
 
-The `ria/` codebase can be found in `/root/ria`. For example:
+The `ria/` codebase can be found in `/app`. For example:
 ```bash
-% docker exec -it `docker ps | grep ria_ria | awk '{print $1}'` /bin/bash
-root@8a6b1779e907:/# cd /root/ria/
-root@8a6b1779e907:~/ria# cargo run --release
+% docker exec -it `docker ps | grep ria-ria | awk '{print $1}'` /bin/bash
+root@8a6b1779e907:/app# cargo run --release
+```
+
+To copy files from the docker container back to the host, try something like:
+```
+docker cp `docker ps | grep ria_ria | awk '{print $1}'`:/app/src/entities/artist.rs .
 ```
 
 

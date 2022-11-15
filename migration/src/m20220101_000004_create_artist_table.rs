@@ -23,13 +23,13 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Artist::Name).string().not_null())
-                    .col(ColumnDef::new(Artist::SortName).string().null())
+                    .col(ColumnDef::new(Artist::SortName).string().not_null())
                     .col(ColumnDef::new(Artist::ArtistType).string().null())
                     .col(ColumnDef::new(Artist::Gender).string().null())
                     .col(ColumnDef::new(Artist::Area).string().null())
                     // @TODO: Alias (multiple, external table)
                     // @TODO: MBID (multiple, external table)
-                    .col(ColumnDef::new(Artist::DisambiguationComment).string().null())
+                    .col(ColumnDef::new(Artist::DisambiguationComment).string().not_null())
                     // @TODO: Annotation
                     .to_owned(),
             )

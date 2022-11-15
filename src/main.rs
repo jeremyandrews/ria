@@ -373,6 +373,7 @@ async fn main() -> Result<(), ()> {
                                                     break;
                                                 }
                                             };
+
                                             let artist_id = if let Some(artist) = existing_artist {
                                                 artist.aid
                                             } else {
@@ -388,24 +389,40 @@ async fn main() -> Result<(), ()> {
                                                     .execute()
                                                     .unwrap();
 
-                                                if let Some(result) =
+                                                let artist = if let Some(result) =
                                                     // For now assume the first matching artist.
-                                                    query_result.entities.iter().nth(0)
+                                                    query_result
+                                                        .entities
+                                                        .iter()
+                                                        .nth(0)
                                                 {
-                                                    event!(Level::WARN, "{:#?}", result);
+                                                    event!(
+                                                        Level::INFO,
+                                                        "MusicBrainz response: {:#?}",
+                                                        result
+                                                    );
+                                                    artist::ActiveModel {
+                                                        name: ActiveValue::Set(
+                                                            result.name.to_string(),
+                                                        ),
+                                                        sort_name: ActiveValue::Set(
+                                                            result.sort_name.to_string(),
+                                                        ),
+                                                        disambiguation_comment: ActiveValue::Set(
+                                                            result.disambiguation.to_string(),
+                                                        ),
+                                                        ..Default::default()
+                                                    }
                                                 } else {
                                                     event!(
                                                         Level::WARN,
                                                         "{} not found in MusicBrainz",
                                                         &s
                                                     );
-                                                }
-                                                // @TODO: Store the results.
-                                                std::process::exit(1);
-
-                                                let artist = artist::ActiveModel {
-                                                    name: ActiveValue::Set(s.to_string()),
-                                                    ..Default::default()
+                                                    artist::ActiveModel {
+                                                        name: ActiveValue::Set(s.to_string()),
+                                                        ..Default::default()
+                                                    }
                                                 };
                                                 event!(Level::DEBUG, "Insert Artist: {:?}", artist);
                                                 let new_artist = Artist::insert(artist)
@@ -422,6 +439,7 @@ async fn main() -> Result<(), ()> {
                                                 artist_aid: ActiveValue::Set(artist_id),
                                                 ..Default::default()
                                             };
+
                                             event!(
                                                 Level::DEBUG,
                                                 "Insert AudioArtist: {:?}",
