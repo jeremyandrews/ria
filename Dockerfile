@@ -1,9 +1,5 @@
 # Build base image using cargo-chef to optimize rebuilds.
-FROM ubuntu:latest AS base
-
-ENV DEBIAN_FRONTEND noninteractive
-# Add cargo to the path.
-ENV PATH="/root/.cargo/bin:${PATH}"
+FROM rust:1-slim-bullseye AS base
 
 # Install ria dependencies.
 RUN apt-get -y update && \
@@ -15,10 +11,6 @@ RUN apt-get -y update && \
   gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools \
   gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 \
   gstreamer1.0-qt5 gstreamer1.0-pulseaudio
-
-# Install Rust and associated tools.
-RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
-
 # Cache installation of sea-orm-cli at the base level.
 RUN cargo install sea-orm-cli
 
@@ -44,4 +36,4 @@ RUN cargo build --release
 FROM base AS runtime
 WORKDIR /app
 COPY --from=builder /app /app
-CMD /usr/bin/tail -F /app/ria.log
+CMD /usr/bin/touch /app/ria.log && /usr/bin/tail -F /app/ria.log
