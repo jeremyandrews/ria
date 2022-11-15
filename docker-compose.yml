@@ -21,7 +21,6 @@ services:
 
   ria:
     # Official Ubuntu LTS image.
-    image: 'ubuntu:latest'
     build:
       context: .
       dockerfile: Dockerfile

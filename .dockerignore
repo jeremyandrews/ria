@@ -3,3 +3,14 @@ db-data/
 
 # Ignore the ria.log file.
 ria.log
+
+#ignore the target dir, we don't want local builds
+target
+
+#misc
+.git
+*.md
+**/*.swo
+**/*.swp
+*.swp
+*.swo
