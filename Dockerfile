@@ -7,7 +7,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install ria dependencies.
 RUN apt-get -y update && \
-  apt-get install -y git curl wget \
+  apt-get install -y build-essential git curl wget \
   vim libssl-dev iputils-ping postgresql-client \
   libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
   libgstreamer-plugins-bad1.0-dev gstreamer1.0-plugins-base \
