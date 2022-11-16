@@ -3,3 +3,4 @@
 /db-data
 /.bash_history
 /migration/target
+/.env

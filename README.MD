@@ -17,7 +17,7 @@ These are generally intended to be temporary assumptions, fixed/removed as devel
  * All music lives in `music/` within the `ria` directory (this can be a symbolic link)
  * Primary focus is on `flac` music files, secondary will be `mp3`
  * PostgreSQL database (intended to also support MySQL or SQLite, through SeaORM -- I'm also still experimenting with using an ORM versus raw queries)
-    * currently assumes database named `ria`, user named `ria`, and password of `password`
+    * in the Docker container the database is dropped and recreated each time it's started
  * Runs on Debian/Ubuntu Linux (see `docker-compose.yml` and `Dockerfile`)
 
 

@@ -36,4 +36,3 @@ RUN cargo build --release
 FROM base AS runtime
 WORKDIR /app
 COPY --from=builder /app /app
-CMD /usr/bin/touch /app/ria.log && /usr/bin/tail -F /app/ria.log

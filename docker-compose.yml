@@ -1,26 +1,21 @@
 version: '3'
 services:
   database:
-    # Official Postgres image.
     image: 'postgres:15-bullseye'
-
     ports:
       - 5432:5432
-
     # Allow connecting from host, ie `psql -p5432 -hlocalhost -Uria`
     expose:
       - "5432"
-
     environment:
-      POSTGRES_USER: ria
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: ria
-
-    volumes:
-      - ./db-data/:/var/lib/postgresql/data/
+      POSTGRES_USER: ${POSTGRES_USER:-ria}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB-ria}
 
   ria:
-    # Official Ubuntu LTS image.
     build:
       context: .
       dockerfile: Dockerfile
+    depends_on:
+      - database
+    command: "./entrypoint.sh database ${POSTGRES_USER:-ria} ${POSTGRES_PASSWORD:-password} ${POSTGRES_DB:-ria}"
