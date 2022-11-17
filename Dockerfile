@@ -17,7 +17,6 @@ RUN cargo install sea-orm-cli
 # Now build the base chef image, which includes the above.
 FROM base AS chef
 WORKDIR /app
-RUN apt-get install -y build-essential
 RUN cargo install cargo-chef
 
 # First create a planner image to generate the dependency recipe.
