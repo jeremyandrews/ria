@@ -8,24 +8,38 @@ use crate::database::{ArtistType, Gender};
 #[sea_orm(table_name = "artist")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub aid: i32,
+    pub artist_id: i32,
     pub name: String,
     pub sort_name: String,
     pub artist_type: Option<ArtistType>,
     pub gender: Option<Gender>,
-    pub area: Option<String>,
     pub disambiguation_comment: String,
+    pub artist_area_id: Option<i32>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::audioartist::Entity")]
-    Audioartist,
+    #[sea_orm(
+        belongs_to = "super::artist_area::Entity",
+        from = "Column::ArtistAreaId",
+        to = "super::artist_area::Column::ArtistAreaId",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    ArtistArea,
+    #[sea_orm(has_many = "super::audio_artist::Entity")]
+    AudioArtist,
 }
 
-impl Related<super::audioartist::Entity> for Entity {
+impl Related<super::artist_area::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Audioartist.def()
+        Relation::ArtistArea.def()
+    }
+}
+
+impl Related<super::audio_artist::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AudioArtist.def()
     }
 }
 

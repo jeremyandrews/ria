@@ -1,5 +1,7 @@
 use sea_orm_migration::prelude::*;
 
+use super::m20220101_000004_create_artistarea_table::ArtistArea;
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -16,7 +18,7 @@ impl MigrationTrait for Migration {
                     .table(Artist::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Artist::Aid)
+                        ColumnDef::new(Artist::ArtistId)
                             .integer()
                             .not_null()
                             .auto_increment()
@@ -26,10 +28,16 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Artist::SortName).string().not_null())
                     .col(ColumnDef::new(Artist::ArtistType).string().null())
                     .col(ColumnDef::new(Artist::Gender).string().null())
-                    .col(ColumnDef::new(Artist::Area).string().null())
                     // @TODO: Alias (multiple, external table)
                     // @TODO: MBID (multiple, external table)
                     .col(ColumnDef::new(Artist::DisambiguationComment).string().not_null())
+                    .col(ColumnDef::new(Artist::ArtistAreaId).integer().null())
+                    .foreign_key(
+                        ForeignKey::create()
+                        .name("fk-artistarea-artistareaid")
+                        .from(Artist::Table, Artist::ArtistAreaId)
+                        .to(ArtistArea::Table, ArtistArea::ArtistAreaId),
+                    )
                     // @TODO: Annotation
                     .to_owned(),
             )
@@ -47,11 +55,11 @@ impl MigrationTrait for Migration {
 #[derive(Iden)]
 pub(crate) enum Artist {
     Table,
-    Aid,
+    ArtistId,
     Name,
     SortName,
     ArtistType,
     Gender,
-    Area,
     DisambiguationComment,
+    ArtistAreaId,
 }

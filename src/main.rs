@@ -342,14 +342,14 @@ async fn main() -> Result<(), ()> {
                                 event!(Level::DEBUG, "tag {}: {:?}", name, values);
                                 for value in values {
                                     if let Some(s) = tags::get_tag_value(name, value) {
-                                        let tag = audiotag::ActiveModel {
-                                            aid: ActiveValue::Set(new_audio.last_insert_id),
+                                        let tag = audio_tag::ActiveModel {
+                                            audio_id: ActiveValue::Set(new_audio.last_insert_id),
                                             name: ActiveValue::Set(name.to_string()),
                                             value: ActiveValue::Set(s.to_string()),
                                             ..Default::default()
                                         };
-                                        event!(Level::DEBUG, "Insert Audiotag: {:?}", tag);
-                                        Audiotag::insert(tag)
+                                        event!(Level::DEBUG, "Insert AudioTag: {:?}", tag);
+                                        AudioTag::insert(tag)
                                             .exec(&db)
                                             .await
                                             .expect("failed to write tag to database");
@@ -375,7 +375,7 @@ async fn main() -> Result<(), ()> {
                                             };
 
                                             let artist_id = if let Some(artist) = existing_artist {
-                                                artist.aid
+                                                artist.artist_id
                                             } else {
                                                 let query =
                                                     musicbrainz_rs::entity::artist::Artist::query_builder()
@@ -401,6 +401,61 @@ async fn main() -> Result<(), ()> {
                                                         "MusicBrainz response: {:#?}",
                                                         result
                                                     );
+
+                                                    let mut area_id = 0;
+
+                                                    // If area is defined, track it in the database.
+                                                    if let Some(area) = &result.area {
+                                                        let existing_area = match ArtistArea::find()
+                                                            .filter(artist_area::Column::Name.contains(&area.name))
+                                                            .one(&db)
+                                                            .await
+                                                        {
+                                                            Ok(e) => e,
+                                                            Err(e) => {
+                                                                event!(
+                                                                    Level::WARN,
+                                                                    "ArtistArea::find() failure: {}",
+                                                                    e
+                                                                );
+                                                                break;
+                                                            }
+                                                        };
+                                                        area_id = if let Some(area) = existing_area {
+                                                            area.artist_area_id
+                                                        } else {
+                                                            let new_area = artist_area::ActiveModel {
+                                                                // @TODO:
+                                                                area_type: ActiveValue::Set(
+                                                                    "".to_string(),
+                                                                ),
+                                                                name: ActiveValue::Set(
+                                                                    area.name.to_string(),
+                                                                ),
+                                                                sort_name: ActiveValue::Set(
+                                                                    area.sort_name.to_string(),
+                                                                ),
+                                                                disambiguation: ActiveValue::Set(
+                                                                    area.disambiguation.to_string(),
+                                                                ),
+                                                                ..Default::default()
+                                                            };
+                                                            event!(Level::DEBUG, "Insert ArtistArea: {:?}", new_area);
+                                                            let new_artist_area = ArtistArea::insert(new_area)
+                                                                .exec(&db)
+                                                                .await
+                                                                .expect("failed to write artist to database");
+                                                            new_artist_area.last_insert_id
+                                                        };
+                                                    }
+
+                                                    // Artist AreaId is optional.
+                                                    let artist_area_id = if area_id > 0 {
+                                                        Some(area_id)
+                                                    } else {
+                                                        None
+                                                    };
+
                                                     artist::ActiveModel {
                                                         name: ActiveValue::Set(
                                                             result.name.to_string(),
@@ -411,8 +466,12 @@ async fn main() -> Result<(), ()> {
                                                         disambiguation_comment: ActiveValue::Set(
                                                             result.disambiguation.to_string(),
                                                         ),
+                                                        artist_area_id: ActiveValue::Set(
+                                                            artist_area_id,
+                                                        ),
                                                         ..Default::default()
                                                     }
+
                                                 } else {
                                                     event!(
                                                         Level::WARN,
@@ -424,6 +483,7 @@ async fn main() -> Result<(), ()> {
                                                         ..Default::default()
                                                     }
                                                 };
+
                                                 event!(Level::DEBUG, "Insert Artist: {:?}", artist);
                                                 let new_artist = Artist::insert(artist)
                                                     .exec(&db)
@@ -432,11 +492,11 @@ async fn main() -> Result<(), ()> {
                                                 new_artist.last_insert_id
                                             };
 
-                                            let audio_artist = audioartist::ActiveModel {
-                                                audio_aid: ActiveValue::Set(
+                                            let audio_artist = audio_artist::ActiveModel {
+                                                audio_id: ActiveValue::Set(
                                                     new_audio.last_insert_id,
                                                 ),
-                                                artist_aid: ActiveValue::Set(artist_id),
+                                                artist_id: ActiveValue::Set(artist_id),
                                                 ..Default::default()
                                             };
 
@@ -445,7 +505,7 @@ async fn main() -> Result<(), ()> {
                                                 "Insert AudioArtist: {:?}",
                                                 audio_artist
                                             );
-                                            Audioartist::insert(audio_artist)
+                                            AudioArtist::insert(audio_artist)
                                                 .exec(&db)
                                                 .await
                                                 .expect("failed to write audio_artist to database");
@@ -454,8 +514,6 @@ async fn main() -> Result<(), ()> {
                                 }
                             }
                         }
-
-                        // @TODO: now store the tags
                     }
                 }
                 MediaType::Unknown => {

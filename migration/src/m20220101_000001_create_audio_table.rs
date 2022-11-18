@@ -13,7 +13,7 @@ impl MigrationTrait for Migration {
                     .table(Audio::Table)
                     .if_not_exists()
                     .col(
-                        ColumnDef::new(Audio::Aid)
+                        ColumnDef::new(Audio::AudioId)
                             .integer()
                             .not_null()
                             .auto_increment()
@@ -44,7 +44,7 @@ impl MigrationTrait for Migration {
 #[derive(Iden)]
 pub(crate) enum Audio {
     Table,
-    Aid,
+    AudioId,
     Uri,
     Path,
     Name,
