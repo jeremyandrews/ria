@@ -2,7 +2,6 @@ mod database;
 mod entities;
 mod tags;
 
-use std::error::Error;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -17,6 +16,8 @@ use tracing::{event, instrument, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 use walkdir::{DirEntry, WalkDir};
+
+use crate::database::{RiaArtistType, RiaGender};
 
 use entities::{prelude::*, *};
 
@@ -35,10 +36,10 @@ enum MediaType {
 }
 impl FromStr for MediaType {
     // @TODO: At this time no error is returned.
-    type Err = Box<dyn Error>;
+    type Err = anyhow::Error;
 
     #[instrument]
-    fn from_str(s: &str) -> Result<Self, Box<dyn Error>> {
+    fn from_str(s: &str) -> Result<Self, anyhow::Error> {
         event!(Level::TRACE, "from_str");
         if s.starts_with("audio/") {
             Ok(MediaType::Audio)
@@ -95,7 +96,7 @@ async fn main() -> Result<(), ()> {
         .expect("failed to set USER_AGENT");
 
     // Set up the MusicBrainz agent.
-    musicbrainz_rs::config::set_user_agent(&USER_AGENT.get().expect("failed to get USER_AGENT"));
+    musicbrainz_rs::config::set_user_agent(USER_AGENT.get().expect("failed to get USER_AGENT"));
 
     // @TODO: Make directories configurable.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
@@ -381,20 +382,22 @@ async fn main() -> Result<(), ()> {
                                                     musicbrainz_rs::entity::artist::Artist::query_builder()
                                                         .name(&s)
                                                         .build();
-                                                let query_result =
+                                                let query_result = match
                                                     musicbrainz_rs::entity::artist::Artist::search(
                                                         query,
                                                     )
-                                                    // @TODO: Error handling.
-                                                    .execute()
-                                                    .unwrap();
+                                                    .execute() {
+                                                        Ok(q) => q,
+                                                        Err(e) => {
+                                                            event!(Level::WARN, "musicbrainz query failed: {}", e);
+                                                            // @TODO: leave the item in the queue to process later.
+                                                            continue
+                                                        }
+                                                    };
 
                                                 let artist = if let Some(result) =
                                                     // For now assume the first matching artist.
-                                                    query_result
-                                                        .entities
-                                                        .iter()
-                                                        .nth(0)
+                                                    query_result.entities.get(0)
                                                 {
                                                     event!(
                                                         Level::INFO,
@@ -407,7 +410,10 @@ async fn main() -> Result<(), ()> {
                                                     // If area is defined, track it in the database.
                                                     if let Some(area) = &result.area {
                                                         let existing_area = match ArtistArea::find()
-                                                            .filter(artist_area::Column::Name.contains(&area.name))
+                                                            .filter(
+                                                                artist_area::Column::Name
+                                                                    .contains(&area.name),
+                                                            )
                                                             .one(&db)
                                                             .await
                                                         {
@@ -421,26 +427,34 @@ async fn main() -> Result<(), ()> {
                                                                 break;
                                                             }
                                                         };
-                                                        area_id = if let Some(area) = existing_area {
+                                                        area_id = if let Some(area) = existing_area
+                                                        {
                                                             area.artist_area_id
                                                         } else {
-                                                            let new_area = artist_area::ActiveModel {
-                                                                // @TODO:
-                                                                area_type: ActiveValue::Set(
-                                                                    "".to_string(),
-                                                                ),
-                                                                name: ActiveValue::Set(
-                                                                    area.name.to_string(),
-                                                                ),
-                                                                sort_name: ActiveValue::Set(
-                                                                    area.sort_name.to_string(),
-                                                                ),
-                                                                disambiguation: ActiveValue::Set(
-                                                                    area.disambiguation.to_string(),
-                                                                ),
-                                                                ..Default::default()
-                                                            };
-                                                            event!(Level::DEBUG, "Insert ArtistArea: {:?}", new_area);
+                                                            let new_area =
+                                                                artist_area::ActiveModel {
+                                                                    // @TODO:
+                                                                    area_type: ActiveValue::Set(
+                                                                        "".to_string(),
+                                                                    ),
+                                                                    name: ActiveValue::Set(
+                                                                        area.name.to_string(),
+                                                                    ),
+                                                                    sort_name: ActiveValue::Set(
+                                                                        area.sort_name.to_string(),
+                                                                    ),
+                                                                    disambiguation:
+                                                                        ActiveValue::Set(
+                                                                            area.disambiguation
+                                                                                .to_string(),
+                                                                        ),
+                                                                    ..Default::default()
+                                                                };
+                                                            event!(
+                                                                Level::DEBUG,
+                                                                "Insert ArtistArea: {:?}",
+                                                                new_area
+                                                            );
                                                             let new_artist_area = ArtistArea::insert(new_area)
                                                                 .exec(&db)
                                                                 .await
@@ -456,6 +470,24 @@ async fn main() -> Result<(), ()> {
                                                         None
                                                     };
 
+                                                    // ArtistType is optional, convert to RiaArtistType to add
+                                                    // SeaOrm mapping.
+                                                    let artist_type: Option<RiaArtistType> =
+                                                        result.artist_type.as_ref().map(|a| {
+                                                            a.try_into().expect(
+                                                                "ArtistType conversion can't fail",
+                                                            )
+                                                        });
+
+                                                    // Gender is optional, convert to RiaGender to add
+                                                    // SeaOrm mapping.
+                                                    let gender: Option<RiaGender> =
+                                                        result.gender.as_ref().map(|g| {
+                                                            g.try_into().expect(
+                                                                "Gender conversion can't fail",
+                                                            )
+                                                        });
+
                                                     artist::ActiveModel {
                                                         name: ActiveValue::Set(
                                                             result.name.to_string(),
@@ -469,9 +501,10 @@ async fn main() -> Result<(), ()> {
                                                         artist_area_id: ActiveValue::Set(
                                                             artist_area_id,
                                                         ),
+                                                        artist_type: ActiveValue::Set(artist_type),
+                                                        gender: ActiveValue::Set(gender),
                                                         ..Default::default()
                                                     }
-
                                                 } else {
                                                     event!(
                                                         Level::WARN,

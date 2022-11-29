@@ -28,10 +28,14 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Artist::SortName).string().not_null())
                     .col(ColumnDef::new(Artist::ArtistType).string().null())
                     .col(ColumnDef::new(Artist::Gender).string().null())
-                    // @TODO: Alias (multiple, external table)
-                    // @TODO: MBID (multiple, external table)
                     .col(ColumnDef::new(Artist::DisambiguationComment).string().not_null())
                     .col(ColumnDef::new(Artist::ArtistAreaId).integer().null())
+                    // @TODO: Alias (multiple, external table)
+                    // @TODO: MBID (multiple, external table)
+                    // @TODO: Genres
+                    // @TODO: Rating
+                    // @TODO: Country
+                    // @TODO: Lifespan
                     .foreign_key(
                         ForeignKey::create()
                         .name("fk-artistarea-artistareaid")

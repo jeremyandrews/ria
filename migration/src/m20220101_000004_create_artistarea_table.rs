@@ -19,10 +19,31 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
+                    // From https://musicbrainz.org/doc/Area, allowed types:
+                    //  - Country
+                    //  - Subdivision
+                    //  - County
+                    //  - Municipality
+                    //  - City
+                    //  - District
+                    //  - Island
                     .col(ColumnDef::new(ArtistArea::AreaType).string().not_null())
                     .col(ColumnDef::new(ArtistArea::Name).string().not_null())
                     .col(ColumnDef::new(ArtistArea::SortName).string().not_null())
                     .col(ColumnDef::new(ArtistArea::Disambiguation).string().not_null())
+                    // @TODO:
+                    // iso_3166_1_codes: None,
+                    // life_span: Some(
+                    //    LifeSpan {
+                    //        ended: None,
+                    //        begin: None,
+                    //        end: None,
+                    //    },
+                    // ),
+                    // tags: None,
+                    // aliases: None,
+                    // genres: None,
+                    // annotation: None,
                     .to_owned()
             )
             .await

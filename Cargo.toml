@@ -1,9 +1,10 @@
 [package]
 name = "ria"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0"
 file-format = "0.7"
 glib = "0.15"
 gstreamer = "0.18"

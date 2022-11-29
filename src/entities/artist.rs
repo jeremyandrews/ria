@@ -2,7 +2,7 @@
 
 use sea_orm::entity::prelude::*;
 
-use crate::database::{ArtistType, Gender};
+use crate::database::{RiaArtistType, RiaGender};
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "artist")]
@@ -11,8 +11,8 @@ pub struct Model {
     pub artist_id: i32,
     pub name: String,
     pub sort_name: String,
-    pub artist_type: Option<ArtistType>,
-    pub gender: Option<Gender>,
+    pub artist_type: Option<RiaArtistType>,
+    pub gender: Option<RiaGender>,
     pub disambiguation_comment: String,
     pub artist_area_id: Option<i32>,
 }
