@@ -1,6 +1,7 @@
 mod database;
 mod entities;
 mod tags;
+mod utils;
 
 use std::path::Path;
 use std::str::FromStr;
@@ -15,7 +16,7 @@ use sea_orm::*;
 use tracing::{event, instrument, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
-use walkdir::{DirEntry, WalkDir};
+use walkdir::WalkDir;
 
 use crate::database::{RiaArtistType, RiaGender};
 
@@ -52,17 +53,6 @@ impl FromStr for MediaType {
     }
 }
 
-/// Skip files and directories that start with ".".
-#[instrument]
-fn is_hidden(entry: &DirEntry) -> bool {
-    event!(Level::TRACE, "is_hidden");
-    entry
-        .file_name()
-        .to_str()
-        .map(|s| s.starts_with('.'))
-        .unwrap_or(false)
-}
-
 #[tokio::main]
 async fn main() -> Result<(), ()> {
     // Log all events to a file. @TODO: add configurable rolling file support.
@@ -85,22 +75,15 @@ async fn main() -> Result<(), ()> {
     // paths. @TODO: remove characters necessary to navigate Windows paths.
     const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'/');
 
-    // Dynamically build a user agent from package name and package version. Store
-    // in a OnceCell to allow static lifetime necessary for the MusicBrainz agent.
-    USER_AGENT
-        .set(format!(
-            "{}/{} (https://github.com/jeremyandrews/ria)",
-            env!("CARGO_PKG_NAME"),
-            env!("CARGO_PKG_VERSION")
-        ))
-        .expect("failed to set USER_AGENT");
+    // Dynamically build a user agent from package name and package version.
+    utils::build_user_agent();
 
-    // Set up the MusicBrainz agent.
+    // Set up the MusicBrainz user agent.
     musicbrainz_rs::config::set_user_agent(USER_AGENT.get().expect("failed to get USER_AGENT"));
 
-    // @TODO: Make directories configurable.
+    // @TODO: Make directories configurable. Currently hardcoded for `./music/`.
     let walker = WalkDir::new("music").follow_links(true).into_iter();
-    for (counter, entry) in walker.filter_entry(|e| !is_hidden(e)).enumerate() {
+    for (counter, entry) in walker.filter_entry(|e| !utils::is_hidden(e)).enumerate() {
         let metadata = match entry.as_ref() {
             Ok(i) => match i.metadata() {
                 Ok(m) => m,
