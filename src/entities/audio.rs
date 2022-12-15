@@ -21,21 +21,21 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::audio_tag::Entity")]
-    AudioTag,
     #[sea_orm(has_many = "super::audio_artist::Entity")]
     AudioArtist,
-}
-
-impl Related<super::audio_tag::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::AudioTag.def()
-    }
+    #[sea_orm(has_many = "super::audio_tag::Entity")]
+    AudioTag,
 }
 
 impl Related<super::audio_artist::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::AudioArtist.def()
+    }
+}
+
+impl Related<super::audio_tag::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AudioTag.def()
     }
 }
 

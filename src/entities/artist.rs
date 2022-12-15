@@ -10,6 +10,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub artist_id: i32,
     pub name: String,
+    pub musicbrainz_name: String,
     pub sort_name: String,
     pub artist_type: Option<RiaArtistType>,
     pub gender: Option<RiaGender>,

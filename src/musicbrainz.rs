@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use escape_string::escape;
 use musicbrainz_rs::Search;
 use once_cell::sync::Lazy;
 use sea_orm::*;
@@ -183,13 +184,14 @@ pub(crate) async fn remove_from_queue(id: i32) {
 
 #[instrument]
 pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
-    event!(Level::TRACE, "load_artist_by_name");
+    let artist_name_escaped = escape(artist_name);
+    event!(Level::ERROR, "load_artist_by_name escaped: {}", artist_name_escaped);
 
     // Check if the artist is already in the database.
     let existing = {
         let db = database::connection().await;
         match Artist::find()
-            .filter(artist::Column::Name.contains(&artist_name))
+            .filter(artist::Column::Name.contains(&artist_name_escaped))
             .one(db)
             .await
         {
@@ -201,13 +203,15 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
         }
     };
 
+    event!(Level::ERROR, "{:#?}", existing);
+
     if let Some(artist) = existing {
         event!(Level::TRACE, "artist exists in database: {:#?}", artist);
         return Some(artist.artist_id);
     }
 
     let query = musicbrainz_rs::entity::artist::Artist::query_builder()
-        .name(artist_name)
+        .name(&artist_name_escaped)
         .build();
 
     // Update global tracking last request to MusicBrainz API to allow throttling requests.
@@ -291,7 +295,8 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
             .map(|g| g.try_into().expect("Gender conversion can't fail"));
 
         artist::ActiveModel {
-            name: ActiveValue::Set(result.name.to_string()),
+            name: ActiveValue::Set(artist_name.to_string()),
+            musicbrainz_name: ActiveValue::Set(result.name.to_string()),
             sort_name: ActiveValue::Set(result.sort_name.to_string()),
             disambiguation_comment: ActiveValue::Set(result.disambiguation.to_string()),
             artist_area_id: ActiveValue::Set(artist_area_id),
@@ -300,9 +305,9 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
             ..Default::default()
         }
     } else {
-        event!(Level::WARN, "{} not found in MusicBrainz", artist_name);
+        event!(Level::WARN, "{} not found in MusicBrainz", artist_name_escaped);
         artist::ActiveModel {
-            name: ActiveValue::Set(artist_name.to_string()),
+            name: ActiveValue::Set(artist_name_escaped.to_string()),
             ..Default::default()
         }
     };

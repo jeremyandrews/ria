@@ -25,6 +25,7 @@ impl MigrationTrait for Migration {
                             .primary_key(),
                     )
                     .col(ColumnDef::new(Artist::Name).string().not_null())
+                    .col(ColumnDef::new(Artist::MusicbrainzName).string().not_null())
                     .col(ColumnDef::new(Artist::SortName).string().not_null())
                     .col(ColumnDef::new(Artist::ArtistType).string().null())
                     .col(ColumnDef::new(Artist::Gender).string().null())
@@ -60,6 +61,7 @@ impl MigrationTrait for Migration {
 pub(crate) enum Artist {
     Table,
     ArtistId,
+    MusicbrainzName,
     Name,
     SortName,
     ArtistType,

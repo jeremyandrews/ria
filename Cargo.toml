@@ -1,12 +1,13 @@
 [package]
 name = "ria"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
 async-once-cell = "0.4"
 chrono = "0.4"
+escape_string = "0.1"
 file-format = "0.7"
 glib = "0.15"
 gstreamer = "0.18"

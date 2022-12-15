@@ -539,6 +539,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "escape_string"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59e867569975c88fdf73833a30bd6e0978aa6ab6bd784b648fcece07450951ba"
+
+[[package]]
 name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2014,11 +2020,12 @@ dependencies = [
 
 [[package]]
 name = "ria"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "async-once-cell",
  "chrono",
+ "escape_string",
  "file-format",
  "glib",
  "gstreamer",
