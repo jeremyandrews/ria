@@ -6,6 +6,7 @@ mod m20220101_000003_create_image_table;
 mod m20220101_000004_create_artistarea_table;
 mod m20220101_000005_create_artist_table;
 mod m20220101_000006_create_audioartist_table;
+mod m20220101_000007_create_musicbrainzqueue_table;
 
 pub struct Migrator;
 
@@ -19,6 +20,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20220101_000004_create_artistarea_table::Migration),
             Box::new(m20220101_000005_create_artist_table::Migration),
             Box::new(m20220101_000006_create_audioartist_table::Migration),
+            Box::new(m20220101_000007_create_musicbrainzqueue_table::Migration),
         ]
     }
 }

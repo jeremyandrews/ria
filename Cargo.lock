@@ -62,6 +62,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8da52d66c7071e2e3fa2a1e5c6d088fec47b593032b254f5e980de8ea54454d6"
 
 [[package]]
+name = "async-once-cell"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f61305cacf1d0c5c9d3ee283d22f8f1f8c743a18ceb44a1b102bd53476c141de"
+
+[[package]]
 name = "async-stream"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2008,9 +2014,11 @@ dependencies = [
 
 [[package]]
 name = "ria"
-version = "0.1.6"
+version = "0.1.7"
 dependencies = [
  "anyhow",
+ "async-once-cell",
+ "chrono",
  "file-format",
  "glib",
  "gstreamer",
@@ -2020,6 +2028,8 @@ dependencies = [
  "percent-encoding 2.2.0",
  "sea-orm",
  "sea-query",
+ "serde",
+ "serde_json",
  "tokio 1.21.2",
  "tracing",
  "tracing-appender",

@@ -8,3 +8,4 @@ pub mod audio;
 pub mod audio_artist;
 pub mod audio_tag;
 pub mod image;
+pub mod musicbrainz_queue;

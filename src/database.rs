@@ -1,7 +1,10 @@
+use async_once_cell::OnceCell;
 use sea_orm::*;
 use tracing::{event, instrument, Level};
 
 use musicbrainz_rs::entity::artist::{ArtistType, Gender};
+
+static DB: OnceCell<DatabaseConnection> = OnceCell::new();
 
 // @TODO: Move into env.
 const DATABASE_URL: &str = "postgres://ria:password@database";
@@ -9,9 +12,19 @@ const DB_NAME: &str = "ria";
 
 // @TODO: eventually this should auto-create the database schema.
 #[instrument]
-pub(crate) async fn connection() -> Result<DatabaseConnection, DbErr> {
+pub(crate) async fn connection() -> &'static DatabaseConnection {
     event!(Level::TRACE, "connection");
-    Database::connect(format!("{}/{}", DATABASE_URL, DB_NAME)).await
+
+    DB.get_or_init(async {
+        match Database::connect(format!("{}/{}", DATABASE_URL, DB_NAME)).await {
+            Ok(d) => d,
+            Err(e) => {
+                // @TODO: better error handling / perhaps retry.
+                panic!("database error: {}", e);
+            }
+        }
+    })
+    .await
 }
 
 /// The recognized `artist.artist_type` options, as defined at

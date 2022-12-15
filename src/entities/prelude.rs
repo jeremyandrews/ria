@@ -6,3 +6,4 @@ pub use super::audio::Entity as Audio;
 pub use super::audio_artist::Entity as AudioArtist;
 pub use super::audio_tag::Entity as AudioTag;
 pub use super::image::Entity as Image;
+pub use super::musicbrainz_queue::Entity as MusicbrainzQueue;

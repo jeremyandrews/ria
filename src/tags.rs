@@ -1,3 +1,4 @@
+use gstreamer::tags::GenericTagIter;
 use gstreamer::GstValueExt;
 use tracing::{event, instrument, Level};
 
@@ -84,4 +85,15 @@ pub(crate) fn get_tag_value(t: &str, v: &glib::SendValue) -> Option<String> {
     } else {
         None
     }
+}
+
+// Extract tag names from GenericTagIter.
+pub(crate) fn get_tags(name: &str, values: GenericTagIter) -> Vec<String> {
+    let mut tags = Vec::new();
+    for value in values {
+        if let Some(s) = get_tag_value(name, value) {
+            tags.push(s.to_string());
+        }
+    }
+    return tags;
 }
