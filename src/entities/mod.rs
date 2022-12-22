@@ -4,8 +4,11 @@ pub mod prelude;
 
 pub mod artist;
 pub mod artist_area;
+pub mod artist_directory;
 pub mod audio;
 pub mod audio_artist;
+pub mod audio_directory;
 pub mod audio_tag;
+pub mod directory;
 pub mod image;
 pub mod musicbrainz_queue;

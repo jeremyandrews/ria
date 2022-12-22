@@ -3,47 +3,33 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(table_name = "audio")]
+#[sea_orm(table_name = "directory")]
 pub struct Model {
     #[sea_orm(primary_key)]
-    pub audio_id: i32,
-    #[sea_orm(unique)]
-    pub uri: String,
+    pub directory_id: i32,
+    pub created: DateTime,
+    pub updated: DateTime,
     pub path: String,
     pub name: String,
-    pub extension: String,
-    pub format: String,
-    pub duration: i32,
-    pub channels: i32,
-    pub bits: i32,
-    pub hertz: i32,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::audio_artist::Entity")]
-    AudioArtist,
+    #[sea_orm(has_many = "super::artist_directory::Entity")]
+    ArtistDirectory,
     #[sea_orm(has_many = "super::audio_directory::Entity")]
     AudioDirectory,
-    #[sea_orm(has_many = "super::audio_tag::Entity")]
-    AudioTag,
 }
 
-impl Related<super::audio_artist::Entity> for Entity {
+impl Related<super::artist_directory::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::AudioArtist.def()
+        Relation::ArtistDirectory.def()
     }
 }
 
 impl Related<super::audio_directory::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::AudioDirectory.def()
-    }
-}
-
-impl Related<super::audio_tag::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::AudioTag.def()
     }
 }
 

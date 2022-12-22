@@ -10,7 +10,7 @@ use tracing::{event, instrument, Level};
 
 use crate::database::{self, RiaArtistType, RiaGender};
 use crate::entities::{prelude::*, *};
-use crate::media::store_audio_artist;
+use crate::media::{store_artist_directory, store_audio_artist};
 
 static MUSICBRAINZ_LAST_REQUEST: Lazy<Arc<RwLock<u64>>> = Lazy::new(|| Arc::new(RwLock::new(0)));
 
@@ -53,6 +53,7 @@ pub(crate) async fn process_queue() {
                     PayloadType::AudioArtist => {
                         if let Some(artist_id) = load_artist_by_name(&payload.value).await {
                             store_audio_artist(payload.id, artist_id).await;
+                            store_artist_directory(payload.id, artist_id).await;
                             remove_from_queue(item.musicbrainz_queue_id).await;
                         }
                     }
@@ -185,7 +186,11 @@ pub(crate) async fn remove_from_queue(id: i32) {
 #[instrument]
 pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
     let artist_name_escaped = escape(artist_name);
-    event!(Level::ERROR, "load_artist_by_name escaped: {}", artist_name_escaped);
+    event!(
+        Level::ERROR,
+        "load_artist_by_name escaped: {}",
+        artist_name_escaped
+    );
 
     // Check if the artist is already in the database.
     let existing = {
@@ -297,6 +302,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
         artist::ActiveModel {
             name: ActiveValue::Set(artist_name.to_string()),
             musicbrainz_name: ActiveValue::Set(result.name.to_string()),
+            musicbrainz_id: ActiveValue::Set(result.id.to_string()),
             sort_name: ActiveValue::Set(result.sort_name.to_string()),
             disambiguation_comment: ActiveValue::Set(result.disambiguation.to_string()),
             artist_area_id: ActiveValue::Set(artist_area_id),
@@ -305,7 +311,11 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
             ..Default::default()
         }
     } else {
-        event!(Level::WARN, "{} not found in MusicBrainz", artist_name_escaped);
+        event!(
+            Level::WARN,
+            "{} not found in MusicBrainz",
+            artist_name_escaped
+        );
         artist::ActiveModel {
             name: ActiveValue::Set(artist_name_escaped.to_string()),
             ..Default::default()

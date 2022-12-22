@@ -59,6 +59,72 @@ pub(crate) async fn store_audio_artist(audio_id: i32, artist_id: i32) {
         .expect("failed to write audio_artist to database");
 }
 
+// Map directory to all artists found in contained audio files.
+pub(crate) async fn store_artist_directory(audio_id: i32, artist_id: i32) {
+    let now = chrono::Utc::now().naive_utc();
+
+    let db = database::connection().await;
+
+    // Build enum to select directory_id column into a Vec<i32>.
+    #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
+    enum QueryAs {
+        DirectoryId,
+    }
+    let results: Vec<i32> = match audio_directory::Entity::find()
+        .filter(audio_directory::Column::AudioId.eq(audio_id))
+        .select_only()
+        .column_as(audio_directory::Column::DirectoryId, QueryAs::DirectoryId)
+        .into_values::<_, QueryAs>()
+        .all(db)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            event!(Level::WARN, "Audio::find() directory_id failure: {}", e);
+            // @TODO: What to do?
+            return;
+        }
+    };
+    for directory_id in results {
+        // @TODO Check if already existing.
+        let existing = {
+            match ArtistDirectory::find()
+                .filter(artist_directory::Column::ArtistId.eq(artist_id))
+                .filter(artist_directory::Column::DirectoryId.eq(directory_id))
+                .one(db)
+                .await
+            {
+                Ok(e) => e,
+                Err(e) => {
+                    event!(Level::WARN, "Audio::find() failure: {}", e);
+                    break;
+                }
+            }
+        };
+
+        // Only add if not already existing.
+        if existing.is_none() {
+            let artist_directory = artist_directory::ActiveModel {
+                created: ActiveValue::Set(now.to_owned()),
+                updated: ActiveValue::Set(now.to_owned()),
+                artist_id: ActiveValue::Set(artist_id),
+                directory_id: ActiveValue::Set(directory_id),
+                ..Default::default()
+            };
+
+            event!(
+                Level::DEBUG,
+                "Insert ArtistDirectory: {:?}",
+                artist_directory
+            );
+            ArtistDirectory::insert(artist_directory)
+                .exec(db)
+                .await
+                .expect("failed to write artist_directory to database");
+        }
+    }
+}
+
 // Scan for media files.
 pub(crate) async fn scan_media_files(path: &str) {
     // Percent-encode all characters except alpha-numerics and "/" to build proper
@@ -398,5 +464,82 @@ pub(crate) async fn scan_media_files(path: &str) {
         if counter > 25_000 {
             break;
         }
+    }
+
+    // Next, group audio files into directories (giving an initial view of what are most likely albums).
+    {
+        let db = database::connection().await;
+        // Build enum to select column into a Vec<String>.
+        #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
+        enum QueryAs {
+            GroupByPath,
+        }
+        let results: Vec<String> = match audio::Entity::find()
+            .select_only()
+            .column_as(audio::Column::Path, QueryAs::GroupByPath)
+            .group_by(audio::Column::Path)
+            .into_values::<_, QueryAs>()
+            .all(db)
+            .await
+        {
+            Ok(q) => q,
+            Err(e) => {
+                event!(Level::WARN, "Audio::find() directories failure: {}", e);
+                // @TODO: What to do?
+                return;
+            }
+        };
+        for result in results {
+            let components = Path::new(&result).components();
+            // @TODO: Error handling.
+            let name = components.last().unwrap();
+
+            let now = chrono::Utc::now().naive_utc();
+            let new_directory = directory::ActiveModel {
+                created: ActiveValue::Set(now.to_owned()),
+                updated: ActiveValue::Set(now.to_owned()),
+                // @TODO: Error handling.
+                name: ActiveValue::Set(name.as_os_str().to_str().unwrap().to_owned()),
+                path: ActiveValue::Set(result.to_owned()),
+                ..Default::default()
+            };
+            let created_directory = Directory::insert(new_directory)
+                .exec(db)
+                .await
+                .expect("failed to write directory to database");
+
+            // Find all audio files contained in the directory.
+            let audio_files = match Audio::find()
+                .filter(audio::Column::Path.contains(&result))
+                .all(db)
+                .await
+            {
+                Ok(e) => e,
+                Err(e) => {
+                    event!(Level::WARN, "Artist::find() by path failure: {}", e);
+                    // @TODO: what to do?
+                    return;
+                }
+            };
+            for audio_file in audio_files {
+                let audio = audio_directory::ActiveModel {
+                    created: ActiveValue::Set(now.to_owned()),
+                    updated: ActiveValue::Set(now),
+                    directory_id: ActiveValue::Set(created_directory.last_insert_id),
+                    audio_id: ActiveValue::Set(audio_file.audio_id),
+                    ..Default::default()
+                };
+                AudioDirectory::insert(audio)
+                    .exec(db)
+                    .await
+                    .expect("failed to write audio_directory to database");
+            }
+        }
+
+        // At this point individual albums can be listed as follows:
+        // SELECT d.name, a.name FROM audio_directory AS ad LEFT JOIN audio AS a ON ad.audio_id = a.audio_id LEFT JOIN directory AS d ON ad.directory_id = d.directory_id WHERE ad.directory_id = 7 ORDER BY a.name
+
+        // And to include the artist name in the list (if identified):
+        // SELECT ar.name, d.name, a.name FROM audio_directory AS ad LEFT JOIN audio AS a ON ad.audio_id = a.audio_id LEFT JOIN directory AS d ON ad.directory_id = d.directory_id LEFT JOIN artist_directory AS ard ON ard.directory_id = d.directory_id LEFT JOIN artist AS ar ON ard.artist_id = ar.artist_id WHERE ad.directory_id = 13 ORDER BY a.name;
     }
 }

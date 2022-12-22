@@ -11,6 +11,7 @@ pub struct Model {
     pub artist_id: i32,
     pub name: String,
     pub musicbrainz_name: String,
+    pub musicbrainz_id: String,
     pub sort_name: String,
     pub artist_type: Option<RiaArtistType>,
     pub gender: Option<RiaGender>,
@@ -30,6 +31,8 @@ pub enum Relation {
     ArtistArea,
     #[sea_orm(has_many = "super::audio_artist::Entity")]
     AudioArtist,
+    #[sea_orm(has_many = "super::artist_directory::Entity")]
+    ArtistDirectory,
 }
 
 impl Related<super::artist_area::Entity> for Entity {
@@ -41,6 +44,12 @@ impl Related<super::artist_area::Entity> for Entity {
 impl Related<super::audio_artist::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::AudioArtist.def()
+    }
+}
+
+impl Related<super::artist_directory::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ArtistDirectory.def()
     }
 }
 
