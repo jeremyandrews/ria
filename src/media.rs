@@ -229,7 +229,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                     let existing = {
                         let db = database::connection().await;
                         match Audio::find()
-                            .filter(audio::Column::Uri.contains(&uri))
+                            .filter(audio::Column::Uri.like(&uri))
                             .one(db)
                             .await
                         {
@@ -399,7 +399,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                                         let existing_artist = {
                                             let db = database::connection().await;
                                             match Artist::find()
-                                                .filter(artist::Column::Name.contains(&value))
+                                                .filter(artist::Column::Name.like(&value))
                                                 .one(db)
                                                 .await
                                             {
@@ -510,7 +510,7 @@ pub(crate) async fn scan_media_files(path: &str) {
 
             // Find all audio files contained in the directory.
             let audio_files = match Audio::find()
-                .filter(audio::Column::Path.contains(&result))
+                .filter(audio::Column::Path.like(&result))
                 .all(db)
                 .await
             {

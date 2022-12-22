@@ -82,7 +82,7 @@ pub(crate) async fn add_to_queue(payload: QueuePayload) {
     let queue_id = {
         let db = database::connection().await;
         match MusicbrainzQueue::find()
-            .filter(musicbrainz_queue::Column::Payload.contains(&payload_json))
+            .filter(musicbrainz_queue::Column::Payload.like(&payload_json))
             .one(db)
             .await
         {
@@ -196,7 +196,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
     let existing = {
         let db = database::connection().await;
         match Artist::find()
-            .filter(artist::Column::Name.contains(&artist_name_escaped))
+            .filter(artist::Column::Name.like(&artist_name_escaped))
             .one(db)
             .await
         {
@@ -248,7 +248,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
             let existing_area = {
                 let db = database::connection().await;
                 match ArtistArea::find()
-                    .filter(artist_area::Column::Name.contains(&area.name))
+                    .filter(artist_area::Column::Name.like(&area.name))
                     .one(db)
                     .await
                 {
