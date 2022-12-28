@@ -86,7 +86,6 @@ pub(crate) async fn store_artist_directory(audio_id: i32, artist_id: i32) {
         }
     };
     for directory_id in results {
-        // @TODO Check if already existing.
         let existing = {
             match ArtistDirectory::find()
                 .filter(artist_directory::Column::ArtistId.eq(artist_id))
@@ -315,7 +314,6 @@ pub(crate) async fn scan_media_files(path: &str) {
                         let caps_str = if let Some(caps) = stream_info.caps() {
                             if caps.is_fixed() {
                                 gstreamer_pbutils::pb_utils_get_codec_description(&caps)
-                                    .unwrap_or_else(|_| glib::GString::from("unknown codec"))
                             } else {
                                 glib::GString::from(caps.to_string())
                             }

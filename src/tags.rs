@@ -1,5 +1,5 @@
 use gstreamer::tags::GenericTagIter;
-use gstreamer::GstValueExt;
+use gstreamer_pbutils::prelude::GstValueExt;
 use tracing::{event, instrument, Level};
 
 /// Convert audio file tag to String for specific tags that we care about.

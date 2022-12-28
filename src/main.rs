@@ -2,13 +2,18 @@ mod database;
 mod entities;
 mod media;
 mod musicbrainz;
+mod player;
 mod tags;
 mod utils;
+
+use std::sync::mpsc::{self, Receiver, Sender};
 
 use once_cell::sync::Lazy;
 use tracing::{event, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
+
+use crate::player::{PlayerMsg, PlayerTrait, Settings};
 
 static USER_AGENT: Lazy<String> = Lazy::new(|| utils::build_user_agent());
 
@@ -24,6 +29,16 @@ async fn main() -> Result<(), ()> {
 
     // Initialize GStreamer.
     gstreamer::init().expect("failed to initialize gstreamer");
+
+    let config = Settings {
+        volume: 1,
+        speed: 1,
+        gapless: false,
+    };
+
+    let (message_tx, message_rx): (Sender<PlayerMsg>, Receiver<PlayerMsg>) = mpsc::channel();
+    let mut player = player::GStreamer::new(&config, message_tx.clone());
+    player.add_and_play("/app/music/things_have_changed.flac");
 
     // Dynamically build a user agent from package name and version, set as MusicBrainz user agent.
     musicbrainz_rs::config::set_user_agent(&*USER_AGENT);
