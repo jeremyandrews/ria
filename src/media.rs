@@ -2,17 +2,18 @@ use std::path::Path;
 use std::str::FromStr;
 
 use file_format::FileFormat;
-use gstreamer_pbutils::DiscovererAudioInfo;
-use gstreamer_pbutils::{prelude::*, DiscovererContainerInfo};
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use sea_orm::*;
+use symphonia::core::formats::FormatOptions;
+use symphonia::core::io::MediaSourceStream;
+use symphonia::core::meta::MetadataOptions;
+use symphonia::core::probe::Hint;
 use tracing::{event, instrument, Level};
 use walkdir::WalkDir;
 
 use crate::database;
 use crate::entities::{prelude::*, *};
 use crate::musicbrainz;
-use crate::tags;
 use crate::utils;
 
 /// The general media types Ria works with.
@@ -183,9 +184,6 @@ pub(crate) async fn scan_media_files(path: &str) {
                     // @TODO: How to properly detect text?
                 }
                 MediaType::Audio => {
-                    // Store any tags that are found in the audio file.
-                    let mut tags = None;
-
                     // Build an absolute URI as required by GStreamer.
                     let path = Path::new(match &std::env::current_dir() {
                         Ok(c) => c,
@@ -274,94 +272,49 @@ pub(crate) async fn scan_media_files(path: &str) {
                         ..Default::default()
                     };
 
-                    let timeout: gstreamer::ClockTime = gstreamer::ClockTime::from_seconds(15);
-                    let discoverer = match gstreamer_pbutils::Discoverer::new(timeout) {
-                        Ok(d) => d,
+                    let src = std::fs::File::open(&path).expect("failed to open media");
+                    let mss = MediaSourceStream::new(Box::new(src), Default::default());
+                    // @TODO: Add hint if possible from file extension and/or mime.
+                    let hint = Hint::new();
+
+                    // Use the default options for metadata and format readers.
+                    let meta_opts: MetadataOptions = Default::default();
+                    let fmt_opts: FormatOptions = Default::default();
+
+                    // Probe the media source.
+                    let mut probed = match symphonia::default::get_probe()
+                        .format(&hint, mss, &fmt_opts, &meta_opts)
+                    {
+                        Ok(p) => p,
                         Err(e) => {
-                            event!(Level::WARN, "Discoverer::new() failure: {}", e);
+                            event!(Level::WARN, "Symphonia get_probe() failure: {}", e);
                             continue;
                         }
                     };
-                    let info = match discoverer.discover_uri(&uri) {
-                        Ok(u) => u,
-                        Err(e) => {
-                            event!(Level::WARN, "discover_uri({}) failure: {}", uri, e);
-                            continue;
-                        }
-                    };
 
-                    event!(
-                        Level::DEBUG,
-                        "Duration: {}",
-                        info.duration().unwrap_or_else(|| gstreamer::ClockTime::NONE
-                            .expect("failed to create empty ClockTime"))
-                    );
-                    audio.duration = sea_orm::ActiveValue::Set(match info.duration() {
-                        Some(d) => match d.seconds().try_into() {
-                            Ok(s) => s,
-                            Err(e) => {
-                                event!(Level::WARN, "mseconds.try_into() failure: {}", e);
-                                continue;
+                    let tracks = probed.format.tracks();
+                    for (idx, track) in tracks.iter().enumerate() {
+                        assert!(idx == 0);
+                        let params = &track.codec_params;
+
+                        // Get duration.
+                        if let Some(n_frames) = params.n_frames {
+                            if let Some(tb) = params.time_base {
+                                audio.duration = sea_orm::ActiveValue::Set(
+                                    tb.calc_time(n_frames).seconds as i32,
+                                );
                             }
-                        },
-                        None => {
-                            event!(Level::WARN, "info.duration() returned nothing");
-                            continue;
                         }
-                    });
-
-                    if let Some(stream_info) = info.stream_info() {
-                        let caps_str = if let Some(caps) = stream_info.caps() {
-                            if caps.is_fixed() {
-                                gstreamer_pbutils::pb_utils_get_codec_description(&caps)
-                            } else {
-                                glib::GString::from(caps.to_string())
-                            }
-                        } else {
-                            glib::GString::from("")
-                        };
-                        audio.format = sea_orm::ActiveValue::Set(caps_str.to_string().to_owned());
-
-                        if let Some(container_info) =
-                            stream_info.downcast_ref::<DiscovererContainerInfo>()
-                        {
-                            event!(
-                                Level::WARN,
-                                "@TODO @@@@@@@@@@: Handle containers... {:#?}",
-                                container_info
-                            );
-                        } else if let Some(container_audio) =
-                            stream_info.downcast_ref::<DiscovererAudioInfo>()
-                        {
-                            audio.channels = sea_orm::ActiveValue::Set(
-                                container_audio
-                                    .channels()
-                                    .try_into()
-                                    .expect("failed to convert u32 to i32"),
-                            );
-                            audio.bits = sea_orm::ActiveValue::Set(
-                                container_audio
-                                    .depth()
-                                    .try_into()
-                                    .expect("failed to convert u32 to i32"),
-                            );
-                            audio.hertz = sea_orm::ActiveValue::Set(
-                                container_audio
-                                    .sample_rate()
-                                    .try_into()
-                                    .expect("failed to convert u32 to i32"),
-                            );
-                            // @TODO: explore if there's any value in the following fields:
-                            //   * container_audio.bitrate()
-                            //   * container_audio.max_bitrate()
-                            //   * container_audio.language()
-
-                            // Store any tags that may be in the audio file.
-                            tags = info.tags();
-                        } else {
-                            event!(Level::WARN, "@TODO @@@@@@@@@@: Handle non-audio streams");
-                        }
+                        // Get channels.
+                        audio.channels =
+                            sea_orm::ActiveValue::Set(params.channels.unwrap().count() as i32);
+                        audio.bits = sea_orm::ActiveValue::Set(match params.bits_per_sample {
+                            Some(b) => b as i32,
+                            None => 0,
+                        });
+                        audio.hertz = sea_orm::ActiveValue::Set(params.sample_rate.unwrap() as i32);
                     }
+
                     // @TODO: Detect changes to the files, and update as needed.
                     // @TODO: Error handling.
                     if existing.is_none() {
@@ -374,30 +327,34 @@ pub(crate) async fn scan_media_files(path: &str) {
                                 .expect("failed to write audio details to database")
                         };
 
-                        if let Some(tags) = tags {
-                            for (name, values) in tags.iter_generic() {
-                                event!(Level::DEBUG, "tag {}: {:?}", name, values);
-                                let values = tags::get_tags(name, values);
-                                for value in values {
-                                    let tag = audio_tag::ActiveModel {
+                        if let Some(metadata_rev) = probed.format.metadata().current() {
+                            // Step through only known tags.
+                            for tag in metadata_rev.tags().iter().filter(|tag| tag.is_known()) {
+                                if let Some(std_key) = tag.std_key {
+                                    event!(Level::DEBUG, "tag {:?}: {}", std_key, tag.value);
+                                    let name = format!("{:?}", std_key);
+                                    let new_tag = audio_tag::ActiveModel {
                                         audio_id: ActiveValue::Set(new_audio.last_insert_id),
                                         name: ActiveValue::Set(name.to_string()),
-                                        value: ActiveValue::Set(value.to_string()),
+                                        value: ActiveValue::Set(tag.value.to_string()),
                                         ..Default::default()
                                     };
                                     {
-                                        event!(Level::DEBUG, "Insert AudioTag: {:?}", tag);
+                                        event!(Level::DEBUG, "Insert AudioTag: {:?}", new_tag);
                                         let db = database::connection().await;
-                                        AudioTag::insert(tag)
+                                        AudioTag::insert(new_tag)
                                             .exec(db)
                                             .await
                                             .expect("failed to write tag to database");
                                     }
-                                    if name == "artist" {
+                                    if name == "Artist" {
                                         let existing_artist = {
                                             let db = database::connection().await;
                                             match Artist::find()
-                                                .filter(artist::Column::Name.like(&value))
+                                                .filter(
+                                                    artist::Column::Name
+                                                        .like(&tag.value.to_string()),
+                                                )
                                                 .one(db)
                                                 .await
                                             {
@@ -425,7 +382,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                                             musicbrainz::add_to_queue(musicbrainz::QueuePayload {
                                                 payload_type: musicbrainz::PayloadType::AudioArtist,
                                                 id: new_audio.last_insert_id,
-                                                value: value.to_string(),
+                                                value: tag.value.to_string(),
                                             })
                                             .await;
                                         }
