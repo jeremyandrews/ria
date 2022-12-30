@@ -9,8 +9,6 @@ use tracing::{event, Level};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::fmt::writer::MakeWriterExt;
 
-//use crate::player::{PlayerMsg, PlayerTrait, Settings};
-
 static USER_AGENT: Lazy<String> = Lazy::new(utils::build_user_agent);
 
 #[tokio::main]

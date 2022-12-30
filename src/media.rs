@@ -62,6 +62,12 @@ pub(crate) async fn store_audio_artist(audio_id: i32, artist_id: i32) {
 
 // Map directory to all artists found in contained audio files.
 pub(crate) async fn store_artist_directory(audio_id: i32, artist_id: i32) {
+    event!(
+        Level::TRACE,
+        "store_artist_directory audio_id({}) artist_id({})",
+        audio_id,
+        artist_id
+    );
     let now = chrono::Utc::now().naive_utc();
 
     let db = database::connection().await;
@@ -184,7 +190,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                     // @TODO: How to properly detect text?
                 }
                 MediaType::Audio => {
-                    // Build an absolute URI as required by GStreamer.
+                    // Build an absolute URI to uniquely identify files.
                     let path = Path::new(match &std::env::current_dir() {
                         Ok(c) => c,
                         Err(e) => {
@@ -241,7 +247,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                     // @TODO: compare to database.
                     let mut audio = audio::ActiveModel {
                         uri: ActiveValue::Set(uri.clone()),
-                        path: ActiveValue::Set(match path.parent() {
+                        path: ActiveValue::Set(match entry.as_ref().unwrap().path().parent() {
                             Some(p) => p.display().to_string(),
                             None => {
                                 event!(Level::WARN, "path.parent() returned none");
@@ -262,7 +268,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                                 "".to_string()
                             }
                         }),
-                        // The following values will be replaced later if GStreamer is able to
+                        // The following values will be replaced later if Symphonia is able to
                         // identify the contents of this audio file.
                         format: ActiveValue::Set("UNKNOWN".to_string()),
                         duration: ActiveValue::Set(0),

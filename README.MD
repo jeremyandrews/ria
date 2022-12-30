@@ -23,16 +23,10 @@ These are generally intended to be temporary assumptions, fixed/removed as devel
 
 ## Installation Notes
 
-Ria uses `gstreamer` to identify, validate, and play music files.
+Ria uses [`symphonia`](https://docs.rs/symphonia) to identify, validate, and play music files.
 
-Follow the official GStreamer documentation to install this dependency, and all desired plugins:
-  https://gstreamer.freedesktop.org/documentation/installing/
-
-It is likely helpful to review the instructions for the `gstreamer-rs` bindings used by Ria:
-  https://gstreamer.pages.freedesktop.org/gstreamer-rs/stable/latest/docs/gstreamer_audio/
-
-Initial gstreamer-rs implementation for identifying music files was derived from [basic-tutorial-9.rs](https://github.com/sdroege/gstreamer-rs/blob/main/tutorials/src/bin/basic-tutorial-9.rs), which is based on [Basic tutorial 9: Media information gathering](https://gstreamer.freedesktop.org/documentation/tutorials/basic/media-information-gathering.html?gi-language=c).
-
+A good example of how to use Symphonia can be found in this example:
+https://github.com/pdeljanov/Symphonia/blob/master/symphonia-play/src/main.rs
 
 ## Docker
 
