@@ -244,6 +244,14 @@ pub(crate) async fn scan_media_files(path: &str) {
                         }
                     };
 
+                    let extension = match path.extension() {
+                        Some(e) => e.to_str().unwrap_or(""),
+                        None => {
+                            event!(Level::WARN, "path.extension() returned nothing");
+                            ""
+                        }
+                    };
+
                     // @TODO: compare to database.
                     let mut audio = audio::ActiveModel {
                         uri: ActiveValue::Set(uri.clone()),
@@ -261,13 +269,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                                 "".to_string()
                             }
                         }),
-                        extension: ActiveValue::Set(match path.extension() {
-                            Some(e) => e.to_str().unwrap_or("").to_string(),
-                            None => {
-                                event!(Level::WARN, "path.extension() returned nothing");
-                                "".to_string()
-                            }
-                        }),
+                        extension: ActiveValue::Set(extension.to_string()),
                         // The following values will be replaced later if Symphonia is able to
                         // identify the contents of this audio file.
                         format: ActiveValue::Set("UNKNOWN".to_string()),
@@ -280,8 +282,12 @@ pub(crate) async fn scan_media_files(path: &str) {
 
                     let src = std::fs::File::open(&path).expect("failed to open media");
                     let mss = MediaSourceStream::new(Box::new(src), Default::default());
-                    // @TODO: Add hint if possible from file extension and/or mime.
-                    let hint = Hint::new();
+
+                    // Add file suffix hint to speed of probe.
+                    let mut hint = Hint::new();
+                    if !extension.is_empty() {
+                        hint.with_extension(extension);
+                    }
 
                     // Use the default options for metadata and format readers.
                     let meta_opts: MetadataOptions = Default::default();
@@ -302,6 +308,12 @@ pub(crate) async fn scan_media_files(path: &str) {
                     for (idx, track) in tracks.iter().enumerate() {
                         assert!(idx == 0);
                         let params = &track.codec_params;
+
+                        if let Some(codec) =
+                            symphonia::default::get_codecs().get_codec(params.codec)
+                        {
+                            audio.format = sea_orm::ActiveValue::Set(codec.long_name.to_string());
+                        }
 
                         // Get duration.
                         if let Some(n_frames) = params.n_frames {
@@ -502,5 +514,70 @@ pub(crate) async fn scan_media_files(path: &str) {
 
         // And to include the artist name in the list (if identified):
         // SELECT ar.name, d.name, a.name FROM audio_directory AS ad LEFT JOIN audio AS a ON ad.audio_id = a.audio_id LEFT JOIN directory AS d ON ad.directory_id = d.directory_id LEFT JOIN artist_directory AS ard ON ard.directory_id = d.directory_id LEFT JOIN artist AS ar ON ard.artist_id = ar.artist_id WHERE ad.directory_id = 13 ORDER BY a.name;
+    }
+}
+
+// @TODO: Optional filters (ie, artist, etc)
+pub(crate) async fn list_media() {
+    #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
+    enum MediaList {
+        ArtistName,
+        DirectoryName,
+        AudioName,
+    }
+
+    let db = database::connection().await;
+    // SELECT ar.name, d.name, a.name FROM audio_directory AS ad
+    //   LEFT JOIN audio AS a ON ad.audio_id = a.audio_id
+    //   LEFT JOIN directory AS d ON ad.directory_id = d.directory_id
+    //   LEFT JOIN artist_directory AS ard ON ard.directory_id = d.directory_id
+    //   LEFT JOIN artist AS ar ON ard.artist_id = ar.artist_id
+    // ORDER BY a.name;
+    let results: Vec<(Option<String>, String, String)> = match audio_directory::Entity::find()
+        .left_join(Audio)
+        .left_join(Directory)
+        .join(
+            JoinType::LeftJoin,
+            directory::Relation::ArtistDirectory.def(),
+        )
+        .join(JoinType::LeftJoin, artist_directory::Relation::Artist.def())
+        .select_only()
+        .column_as(artist::Column::Name, MediaList::ArtistName)
+        .column_as(directory::Column::Name, MediaList::DirectoryName)
+        .column_as(audio::Column::Name, MediaList::AudioName)
+        .order_by_asc(artist::Column::SortName)
+        .order_by_asc(directory::Column::Name)
+        .order_by_asc(audio::Column::Name)
+        .into_values::<_, MediaList>()
+        .all(db)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            event!(
+                Level::WARN,
+                "AudioDirectory::find() list_media failure: {}",
+                e
+            );
+            // @TODO: What to do?
+            return;
+        }
+    };
+    let mut last_artist = None;
+    let mut last_album = String::new();
+    for row in results {
+        if !row.0.eq(&last_artist) {
+            last_artist = row.0;
+            if let Some(artist) = last_artist.as_ref() {
+                println!("\n{}:", artist)
+            } else {
+                println!("\nUnidentified artist:");
+            }
+        }
+        if last_album != row.1 {
+            last_album = row.1;
+            println!("  {}", last_album)
+        }
+        println!("     - {}", row.2);
     }
 }
