@@ -1,0 +1,20 @@
+# Default configuration assumes all audio files are in a local directory named
+# "./music". Can be overridden here, or with the RIA_LIBRARY environment variable,
+# or on the command line with the --library option.
+library = "./music"
+
+# Supported database types are `SQLite`, `PostgreSQL` and `MySQL`. Currently there
+# is no way to migrate from one database type to another. While SQLite is the
+# simplest to get started with, it's generally recommended to use PostgreSQL for a
+# large collection of audio files.
+database_type = "SQLite"
+
+# If using PostgreSQL or MySQL, you must set a database user.
+# database_user = "ria"
+
+# If using PostgreSQL or MySQL, you must set a database password.
+# database_user = "__REPLACE_ME__"
+
+# If using PostgreSQL or MySQL, this could just be `ria`. If using SQLite this
+# should typically include a file suffice, for example `ria.db`.
+database_name = "ria.db"

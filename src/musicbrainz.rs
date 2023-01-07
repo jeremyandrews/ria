@@ -11,6 +11,7 @@ use tracing::{event, instrument, Level};
 use crate::database::{self, RiaArtistType, RiaGender};
 use crate::entities::{prelude::*, *};
 use crate::media::{store_artist_directory, store_audio_artist};
+use crate::Config;
 
 static MUSICBRAINZ_LAST_REQUEST: Lazy<Arc<RwLock<u64>>> = Lazy::new(|| Arc::new(RwLock::new(0)));
 
@@ -33,7 +34,7 @@ pub(crate) enum PayloadType {
 }
 
 #[instrument]
-pub(crate) async fn process_queue() {
+pub(crate) async fn process_queue(config: &Config) {
     event!(Level::TRACE, "process_queue");
 
     // Ensure that we query the Musicbrainz API no more than once every 2 seconds.
@@ -46,15 +47,15 @@ pub(crate) async fn process_queue() {
 
         if time_since_last_request >= MINIMUM_DELAY {
             event!(Level::TRACE, "process next queue item");
-            if let Some(item) = load_from_queue().await {
+            if let Some(item) = load_from_queue(config).await {
                 // @TODO: Error handling.
                 let payload: QueuePayload = serde_json::from_str(&item.payload.unwrap()).unwrap();
                 match payload.payload_type {
                     PayloadType::AudioArtist => {
-                        if let Some(artist_id) = load_artist_by_name(&payload.value).await {
-                            store_audio_artist(payload.id, artist_id).await;
-                            store_artist_directory(payload.id, artist_id).await;
-                            remove_from_queue(item.musicbrainz_queue_id).await;
+                        if let Some(artist_id) = load_artist_by_name(config, &payload.value).await {
+                            store_audio_artist(config, payload.id, artist_id).await;
+                            store_artist_directory(config, payload.id, artist_id).await;
+                            remove_from_queue(config, item.musicbrainz_queue_id).await;
                         }
                     }
                 }
@@ -72,7 +73,7 @@ pub(crate) async fn process_queue() {
 }
 
 #[instrument]
-pub(crate) async fn add_to_queue(payload: QueuePayload) {
+pub(crate) async fn add_to_queue(config: &Config, payload: QueuePayload) {
     event!(Level::TRACE, "add_to_queue");
 
     // Convert payload to JSON String. @TODO: error handling.
@@ -80,7 +81,7 @@ pub(crate) async fn add_to_queue(payload: QueuePayload) {
 
     // Be sure the payload isn't already in the queue.
     let queue_id = {
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         match MusicbrainzQueue::find()
             .filter(musicbrainz_queue::Column::Payload.like(&payload_json))
             .one(db)
@@ -105,7 +106,7 @@ pub(crate) async fn add_to_queue(payload: QueuePayload) {
             payload: Set(Some(payload_json.to_owned())),
             ..Default::default()
         };
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         if let Err(error) = queue_item.insert(db).await {
             event!(
                 Level::WARN,
@@ -124,11 +125,11 @@ pub(crate) async fn add_to_queue(payload: QueuePayload) {
 }
 
 #[instrument]
-pub(crate) async fn load_from_queue() -> Option<musicbrainz_queue::Model> {
+pub(crate) async fn load_from_queue(config: &Config) -> Option<musicbrainz_queue::Model> {
     event!(Level::TRACE, "load_from_queue");
 
     let queue_item = {
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         // @TODO: wrap in a lock, or turn this into a subquery as described at
         // https://blabosoft.com/implementing-queue-in-postgresql. Lock is probably
         // better for keeping this database-agnostic.
@@ -150,7 +151,7 @@ pub(crate) async fn load_from_queue() -> Option<musicbrainz_queue::Model> {
         event!(Level::TRACE, "next queue_id: {}", queue_id);
         let mut item: musicbrainz_queue::ActiveModel = item.into();
         item.processing_started_at = Set(Some(chrono::Utc::now().naive_utc().to_owned()));
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         match item.update(db).await {
             Ok(i) => Some(i),
             Err(e) => {
@@ -169,10 +170,10 @@ pub(crate) async fn load_from_queue() -> Option<musicbrainz_queue::Model> {
 }
 
 #[instrument]
-pub(crate) async fn remove_from_queue(id: i32) {
+pub(crate) async fn remove_from_queue(config: &Config, id: i32) {
     event!(Level::TRACE, "remove_from_queue");
 
-    let db = database::connection().await;
+    let db = database::connection(config).await;
     if let Err(e) = MusicbrainzQueue::delete_by_id(id).exec(db).await {
         event!(
             Level::WARN,
@@ -184,7 +185,7 @@ pub(crate) async fn remove_from_queue(id: i32) {
 }
 
 #[instrument]
-pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
+pub(crate) async fn load_artist_by_name(config: &Config, artist_name: &str) -> Option<i32> {
     let artist_name_escaped = escape(artist_name);
     event!(
         Level::ERROR,
@@ -194,7 +195,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
 
     // Check if the artist is already in the database.
     let existing = {
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         match Artist::find()
             .filter(artist::Column::Name.like(&artist_name_escaped))
             .one(db)
@@ -246,7 +247,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
         // If area is defined, track it in the database.
         if let Some(area) = &result.area {
             let existing_area = {
-                let db = database::connection().await;
+                let db = database::connection(config).await;
                 match ArtistArea::find()
                     .filter(artist_area::Column::Name.like(&area.name))
                     .one(db)
@@ -272,7 +273,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
                 };
                 event!(Level::DEBUG, "Insert ArtistArea: {:?}", new_area);
                 let new_artist_area = {
-                    let db = database::connection().await;
+                    let db = database::connection(config).await;
                     ArtistArea::insert(new_area)
                         .exec(db)
                         .await
@@ -324,7 +325,7 @@ pub(crate) async fn load_artist_by_name(artist_name: &str) -> Option<i32> {
 
     event!(Level::DEBUG, "Insert Artist: {:?}", artist);
     let new_artist = {
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         Artist::insert(artist)
             .exec(db)
             .await

@@ -15,6 +15,16 @@ use crate::database;
 use crate::entities::{prelude::*, *};
 use crate::musicbrainz;
 use crate::utils;
+use crate::Config;
+
+#[derive(Clone, Debug, FromQueryResult)]
+pub(crate) struct MediaList {
+    pub(crate) audio_name: String,
+    pub(crate) audio_path: String,
+    pub(crate) audio_id: u32,
+    pub(crate) directory_name: String,
+    pub(crate) artist_name: Option<String>,
+}
 
 /// The general media types Ria works with.
 pub(crate) enum MediaType {
@@ -45,7 +55,7 @@ impl FromStr for MediaType {
     }
 }
 
-pub(crate) async fn store_audio_artist(audio_id: i32, artist_id: i32) {
+pub(crate) async fn store_audio_artist(config: &Config, audio_id: i32, artist_id: i32) {
     let audio_artist = audio_artist::ActiveModel {
         audio_id: ActiveValue::Set(audio_id),
         artist_id: ActiveValue::Set(artist_id),
@@ -53,7 +63,7 @@ pub(crate) async fn store_audio_artist(audio_id: i32, artist_id: i32) {
     };
 
     event!(Level::DEBUG, "Insert AudioArtist: {:?}", audio_artist);
-    let db = database::connection().await;
+    let db = database::connection(config).await;
     AudioArtist::insert(audio_artist)
         .exec(db)
         .await
@@ -61,7 +71,7 @@ pub(crate) async fn store_audio_artist(audio_id: i32, artist_id: i32) {
 }
 
 // Map directory to all artists found in contained audio files.
-pub(crate) async fn store_artist_directory(audio_id: i32, artist_id: i32) {
+pub(crate) async fn store_artist_directory(config: &Config, audio_id: i32, artist_id: i32) {
     event!(
         Level::TRACE,
         "store_artist_directory audio_id({}) artist_id({})",
@@ -70,7 +80,7 @@ pub(crate) async fn store_artist_directory(audio_id: i32, artist_id: i32) {
     );
     let now = chrono::Utc::now().naive_utc();
 
-    let db = database::connection().await;
+    let db = database::connection(config).await;
 
     // Build enum to select directory_id column into a Vec<i32>.
     #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
@@ -131,12 +141,101 @@ pub(crate) async fn store_artist_directory(audio_id: i32, artist_id: i32) {
     }
 }
 
+// @TODO: Optional filters (ie, artist, etc)
+pub(crate) async fn print_media(config: &Config) {
+    let media = get_media(config).await;
+    let mut last_artist = None;
+    let mut last_album = String::new();
+    for audio in media {
+        if !audio.artist_name.eq(&last_artist) {
+            last_artist = audio.artist_name;
+            if let Some(artist) = last_artist.as_ref() {
+                println!("\n{}:", artist)
+            } else {
+                println!("\nUnidentified artist:");
+            }
+        }
+        if last_album != audio.directory_name {
+            last_album = audio.directory_name;
+            println!("  {}", last_album)
+        }
+        println!("     - {}", audio.audio_name);
+    }
+}
+
+// @TODO: Optional filters (ie, artist, etc)
+pub(crate) async fn get_media(config: &Config) -> Vec<MediaList> {
+    let db = database::connection(config).await;
+    // SELECT ar.name, d.name, a.name FROM audio_directory AS ad
+    //   LEFT JOIN audio AS a ON ad.audio_id = a.audio_id
+    //   LEFT JOIN directory AS d ON ad.directory_id = d.directory_id
+    //   LEFT JOIN artist_directory AS ard ON ard.directory_id = d.directory_id
+    //   LEFT JOIN artist AS ar ON ard.artist_id = ar.artist_id
+    // ORDER BY a.name;
+
+    //match audio_directory::Entity::find()
+    let mut select_query = audio_directory::Entity::find()
+        .left_join(Audio)
+        .left_join(Directory)
+        .join(
+            JoinType::LeftJoin,
+            directory::Relation::ArtistDirectory.def(),
+        )
+        .join(JoinType::LeftJoin, artist_directory::Relation::Artist.def())
+        .select_only()
+        .column_as(audio::Column::AudioId, "audio_id")
+        .column_as(audio::Column::Path, "audio_path")
+        .column_as(audio::Column::Name, "audio_name")
+        .column_as(directory::Column::Name, "directory_name")
+        .column_as(artist::Column::Name, "artist_name");
+
+    if config.artist.is_some() {
+        select_query =
+            select_query.filter(artist::Column::Name.contains(&config.artist.as_ref().unwrap()));
+    }
+
+    if config.directory.is_some() {
+        select_query = select_query
+            .filter(directory::Column::Name.contains(&config.directory.as_ref().unwrap()));
+    }
+
+    if config.track.is_some() {
+        select_query =
+            select_query.filter(audio::Column::Name.contains(&config.track.as_ref().unwrap()));
+    }
+
+    match select_query
+        .order_by_asc(artist::Column::SortName)
+        .order_by_asc(directory::Column::Name)
+        .order_by_asc(audio::Column::Name)
+        .into_model::<MediaList>()
+        .all(db)
+        .await
+    {
+        Ok(r) => r,
+        Err(e) => {
+            // No results to return.
+            event!(
+                Level::WARN,
+                "AudioDirectory::find() list_media failure: {}",
+                e
+            );
+            Vec::new()
+        }
+    }
+}
+
 // Scan for media files.
-pub(crate) async fn scan_media_files(path: &str) {
+pub(crate) async fn scan_media_files(config: &Config) {
     // Percent-encode all characters except alpha-numerics and "/" to build proper
     // paths. @TODO: remove characters necessary to navigate Windows paths.
     const FRAGMENT: &AsciiSet = &NON_ALPHANUMERIC.remove(b'/');
 
+    let path = config
+        .library
+        .as_ref()
+        .expect("library must exist")
+        .to_string();
     let walker = WalkDir::new(path).follow_links(true).into_iter();
     for (counter, entry) in walker.filter_entry(|e| !utils::is_hidden(e)).enumerate() {
         let metadata = match entry.as_ref() {
@@ -230,7 +329,7 @@ pub(crate) async fn scan_media_files(path: &str) {
 
                     // Check if this audio file is already in the database.
                     let existing = {
-                        let db = database::connection().await;
+                        let db = database::connection(config).await;
                         match Audio::find()
                             .filter(audio::Column::Uri.like(&uri))
                             .one(db)
@@ -338,7 +437,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                     if existing.is_none() {
                         event!(Level::DEBUG, "Insert Audio File: {:?}", audio);
                         let new_audio = {
-                            let db = database::connection().await;
+                            let db = database::connection(config).await;
                             Audio::insert(audio)
                                 .exec(db)
                                 .await
@@ -359,7 +458,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                                     };
                                     {
                                         event!(Level::DEBUG, "Insert AudioTag: {:?}", new_tag);
-                                        let db = database::connection().await;
+                                        let db = database::connection(config).await;
                                         AudioTag::insert(new_tag)
                                             .exec(db)
                                             .await
@@ -367,7 +466,7 @@ pub(crate) async fn scan_media_files(path: &str) {
                                     }
                                     if name == "Artist" {
                                         let existing_artist = {
-                                            let db = database::connection().await;
+                                            let db = database::connection(config).await;
                                             match Artist::find()
                                                 .filter(
                                                     artist::Column::Name
@@ -390,6 +489,7 @@ pub(crate) async fn scan_media_files(path: &str) {
 
                                         if let Some(artist) = existing_artist {
                                             store_audio_artist(
+                                                config,
                                                 new_audio.last_insert_id,
                                                 artist.artist_id,
                                             )
@@ -397,11 +497,15 @@ pub(crate) async fn scan_media_files(path: &str) {
                                         } else {
                                             // Artist doesn't exist in our database, add to MusicBrainz queue
                                             // to download details.
-                                            musicbrainz::add_to_queue(musicbrainz::QueuePayload {
-                                                payload_type: musicbrainz::PayloadType::AudioArtist,
-                                                id: new_audio.last_insert_id,
-                                                value: tag.value.to_string(),
-                                            })
+                                            musicbrainz::add_to_queue(
+                                                config,
+                                                musicbrainz::QueuePayload {
+                                                    payload_type:
+                                                        musicbrainz::PayloadType::AudioArtist,
+                                                    id: new_audio.last_insert_id,
+                                                    value: tag.value.to_string(),
+                                                },
+                                            )
                                             .await;
                                         }
                                     }
@@ -441,7 +545,7 @@ pub(crate) async fn scan_media_files(path: &str) {
 
     // Next, group audio files into directories (giving an initial view of what are most likely albums).
     {
-        let db = database::connection().await;
+        let db = database::connection(config).await;
         // Build enum to select column into a Vec<String>.
         #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
         enum QueryAs {
@@ -508,76 +612,5 @@ pub(crate) async fn scan_media_files(path: &str) {
                     .expect("failed to write audio_directory to database");
             }
         }
-
-        // At this point individual albums can be listed as follows:
-        // SELECT d.name, a.name FROM audio_directory AS ad LEFT JOIN audio AS a ON ad.audio_id = a.audio_id LEFT JOIN directory AS d ON ad.directory_id = d.directory_id WHERE ad.directory_id = 7 ORDER BY a.name
-
-        // And to include the artist name in the list (if identified):
-        // SELECT ar.name, d.name, a.name FROM audio_directory AS ad LEFT JOIN audio AS a ON ad.audio_id = a.audio_id LEFT JOIN directory AS d ON ad.directory_id = d.directory_id LEFT JOIN artist_directory AS ard ON ard.directory_id = d.directory_id LEFT JOIN artist AS ar ON ard.artist_id = ar.artist_id WHERE ad.directory_id = 13 ORDER BY a.name;
-    }
-}
-
-// @TODO: Optional filters (ie, artist, etc)
-pub(crate) async fn list_media() {
-    #[derive(Copy, Clone, Debug, EnumIter, DeriveColumn)]
-    enum MediaList {
-        ArtistName,
-        DirectoryName,
-        AudioName,
-    }
-
-    let db = database::connection().await;
-    // SELECT ar.name, d.name, a.name FROM audio_directory AS ad
-    //   LEFT JOIN audio AS a ON ad.audio_id = a.audio_id
-    //   LEFT JOIN directory AS d ON ad.directory_id = d.directory_id
-    //   LEFT JOIN artist_directory AS ard ON ard.directory_id = d.directory_id
-    //   LEFT JOIN artist AS ar ON ard.artist_id = ar.artist_id
-    // ORDER BY a.name;
-    let results: Vec<(Option<String>, String, String)> = match audio_directory::Entity::find()
-        .left_join(Audio)
-        .left_join(Directory)
-        .join(
-            JoinType::LeftJoin,
-            directory::Relation::ArtistDirectory.def(),
-        )
-        .join(JoinType::LeftJoin, artist_directory::Relation::Artist.def())
-        .select_only()
-        .column_as(artist::Column::Name, MediaList::ArtistName)
-        .column_as(directory::Column::Name, MediaList::DirectoryName)
-        .column_as(audio::Column::Name, MediaList::AudioName)
-        .order_by_asc(artist::Column::SortName)
-        .order_by_asc(directory::Column::Name)
-        .order_by_asc(audio::Column::Name)
-        .into_values::<_, MediaList>()
-        .all(db)
-        .await
-    {
-        Ok(r) => r,
-        Err(e) => {
-            event!(
-                Level::WARN,
-                "AudioDirectory::find() list_media failure: {}",
-                e
-            );
-            // @TODO: What to do?
-            return;
-        }
-    };
-    let mut last_artist = None;
-    let mut last_album = String::new();
-    for row in results {
-        if !row.0.eq(&last_artist) {
-            last_artist = row.0;
-            if let Some(artist) = last_artist.as_ref() {
-                println!("\n{}:", artist)
-            } else {
-                println!("\nUnidentified artist:");
-            }
-        }
-        if last_album != row.1 {
-            last_album = row.1;
-            println!("  {}", last_album)
-        }
-        println!("     - {}", row.2);
     }
 }
