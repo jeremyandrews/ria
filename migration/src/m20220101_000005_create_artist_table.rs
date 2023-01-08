@@ -30,7 +30,11 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(Artist::SortName).string().not_null())
                     .col(ColumnDef::new(Artist::ArtistType).string().null())
                     .col(ColumnDef::new(Artist::Gender).string().null())
-                    .col(ColumnDef::new(Artist::DisambiguationComment).string().not_null())
+                    .col(
+                        ColumnDef::new(Artist::DisambiguationComment)
+                            .string()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(Artist::ArtistAreaId).integer().null())
                     // @TODO: Alias (multiple, external table)
                     // @TODO: Genres
@@ -39,9 +43,9 @@ impl MigrationTrait for Migration {
                     // @TODO: Lifespan
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-artistarea-artistareaid")
-                        .from(Artist::Table, Artist::ArtistAreaId)
-                        .to(ArtistArea::Table, ArtistArea::ArtistAreaId),
+                            .name("fk-artistarea-artistareaid")
+                            .from(Artist::Table, Artist::ArtistAreaId)
+                            .to(ArtistArea::Table, ArtistArea::ArtistAreaId),
                     )
                     // @TODO: Annotation
                     .to_owned(),

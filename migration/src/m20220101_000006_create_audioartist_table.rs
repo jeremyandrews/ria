@@ -25,16 +25,16 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(AudioArtist::AudioId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-audio-audioid")
-                        .from(AudioArtist::Table, AudioArtist::AudioId)
-                        .to(Audio::Table, Audio::AudioId),
+                            .name("fk-audio-audioid")
+                            .from(AudioArtist::Table, AudioArtist::AudioId)
+                            .to(Audio::Table, Audio::AudioId),
                     )
                     .col(ColumnDef::new(AudioArtist::ArtistId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-artist-artistid")
-                        .from(AudioArtist::Table, AudioArtist::ArtistId)
-                        .to(Artist::Table, Artist::ArtistId),
+                            .name("fk-artist-artistid")
+                            .from(AudioArtist::Table, AudioArtist::ArtistId)
+                            .to(Artist::Table, Artist::ArtistId),
                     )
                     .to_owned(),
             )

@@ -19,8 +19,16 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(MusicbrainzQueue::CreatedAt).timestamp().not_null())
-                    .col(ColumnDef::new(MusicbrainzQueue::ProcessingStartedAt).timestamp().null())
+                    .col(
+                        ColumnDef::new(MusicbrainzQueue::CreatedAt)
+                            .timestamp()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(MusicbrainzQueue::ProcessingStartedAt)
+                            .timestamp()
+                            .null(),
+                    )
                     .col(ColumnDef::new(MusicbrainzQueue::Errors).string().null())
                     .col(ColumnDef::new(MusicbrainzQueue::Payload).string().null())
                     .to_owned(),

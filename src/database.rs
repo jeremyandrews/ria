@@ -88,7 +88,7 @@ pub(crate) async fn connection(config: &Config) -> &'static DatabaseConnection {
         }
     };
 
-    event!(Level::WARN, "database url: {}", database_url);
+    event!(Level::DEBUG, "database url: {}", database_url);
 
     DB.get_or_init(async {
         match Database::connect(database_url).await {

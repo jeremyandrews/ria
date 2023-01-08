@@ -1,6 +1,6 @@
 [package]
 name = "ria"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 
 [dependencies]
@@ -8,7 +8,6 @@ anyhow = "1.0"
 async-once-cell = "0.4"
 clap = { version = "4.0", features = ["derive"] }
 chrono = "0.4"
-escape_string = "0.1"
 figment = { version = "0.10", features = ["env", "toml"] }
 file-format = "0.7"
 musicbrainz_rs = "0.4"

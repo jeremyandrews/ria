@@ -4,7 +4,7 @@ FROM rust:1-slim-bullseye AS base
 # Install ria dependencies.
 RUN apt-get -y update && \
   apt-get install -y build-essential git curl wget \
-  vim libssl-dev iputils-ping postgresql-client
+  vim libssl-dev iputils-ping postgresql-client libasound2-dev
 # Cache installation of sea-orm-cli at the base level.
 RUN cargo install sea-orm-cli
 

@@ -30,7 +30,11 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(ArtistArea::AreaType).string().not_null())
                     .col(ColumnDef::new(ArtistArea::Name).string().not_null())
                     .col(ColumnDef::new(ArtistArea::SortName).string().not_null())
-                    .col(ColumnDef::new(ArtistArea::Disambiguation).string().not_null())
+                    .col(
+                        ColumnDef::new(ArtistArea::Disambiguation)
+                            .string()
+                            .not_null(),
+                    )
                     // @TODO:
                     // iso_3166_1_codes: None,
                     // life_span: Some(
@@ -44,7 +48,7 @@ impl MigrationTrait for Migration {
                     // aliases: None,
                     // genres: None,
                     // annotation: None,
-                    .to_owned()
+                    .to_owned(),
             )
             .await
     }

@@ -1,11 +1,11 @@
 use std::sync::{Arc, RwLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use escape_string::escape;
 use musicbrainz_rs::Search;
 use once_cell::sync::Lazy;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
+use tokio::sync::oneshot::Receiver;
 use tracing::{event, instrument, Level};
 
 use crate::database::{self, RiaArtistType, RiaGender};
@@ -34,7 +34,7 @@ pub(crate) enum PayloadType {
 }
 
 #[instrument]
-pub(crate) async fn process_queue(config: &Config) {
+pub(crate) async fn process_queue(config: &Config, mut rx: Receiver<bool>) {
     event!(Level::TRACE, "process_queue");
 
     // Ensure that we query the Musicbrainz API no more than once every 2 seconds.
@@ -61,6 +61,13 @@ pub(crate) async fn process_queue(config: &Config) {
                 }
             } else {
                 event!(Level::TRACE, "the queue is empty");
+                if rx.try_recv().is_ok() {
+                    event!(
+                        Level::WARN,
+                        "process_queue received shutdown message, exiting"
+                    );
+                    break;
+                }
                 tokio::time::sleep(tokio::time::Duration::from_secs(MINIMUM_DELAY)).await;
             }
         } else {
@@ -171,7 +178,7 @@ pub(crate) async fn load_from_queue(config: &Config) -> Option<musicbrainz_queue
 
 #[instrument]
 pub(crate) async fn remove_from_queue(config: &Config, id: i32) {
-    event!(Level::TRACE, "remove_from_queue");
+    event!(Level::DEBUG, "remove_from_queue");
 
     let db = database::connection(config).await;
     if let Err(e) = MusicbrainzQueue::delete_by_id(id).exec(db).await {
@@ -186,18 +193,11 @@ pub(crate) async fn remove_from_queue(config: &Config, id: i32) {
 
 #[instrument]
 pub(crate) async fn load_artist_by_name(config: &Config, artist_name: &str) -> Option<i32> {
-    let artist_name_escaped = escape(artist_name);
-    event!(
-        Level::ERROR,
-        "load_artist_by_name escaped: {}",
-        artist_name_escaped
-    );
-
     // Check if the artist is already in the database.
     let existing = {
         let db = database::connection(config).await;
         match Artist::find()
-            .filter(artist::Column::Name.like(&artist_name_escaped))
+            .filter(artist::Column::Name.like(&artist_name))
             .one(db)
             .await
         {
@@ -209,7 +209,7 @@ pub(crate) async fn load_artist_by_name(config: &Config, artist_name: &str) -> O
         }
     };
 
-    event!(Level::ERROR, "{:#?}", existing);
+    event!(Level::DEBUG, "{:#?}", existing);
 
     if let Some(artist) = existing {
         event!(Level::TRACE, "artist exists in database: {:#?}", artist);
@@ -217,7 +217,7 @@ pub(crate) async fn load_artist_by_name(config: &Config, artist_name: &str) -> O
     }
 
     let query = musicbrainz_rs::entity::artist::Artist::query_builder()
-        .name(&artist_name_escaped)
+        .name(&artist_name)
         .build();
 
     // Update global tracking last request to MusicBrainz API to allow throttling requests.
@@ -312,13 +312,9 @@ pub(crate) async fn load_artist_by_name(config: &Config, artist_name: &str) -> O
             ..Default::default()
         }
     } else {
-        event!(
-            Level::WARN,
-            "{} not found in MusicBrainz",
-            artist_name_escaped
-        );
+        event!(Level::WARN, "{} not found in MusicBrainz", artist_name);
         artist::ActiveModel {
-            name: ActiveValue::Set(artist_name_escaped.to_string()),
+            name: ActiveValue::Set(artist_name.to_string()),
             ..Default::default()
         }
     };

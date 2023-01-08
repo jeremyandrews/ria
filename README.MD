@@ -23,11 +23,16 @@ An audio management system.
 
 Ria can be configured (in order of precedence) by setting CLI flags, by setting environment variables, and via the `ria.toml` configuration file. The default configuration assumes all audio files live in a `./music` directory. It defaults to using SQLite in a file named `./ria.db`. For large audio collections it's strongly recommended to use `PostgreSQL` or `MySQL` instead.
 
-1) Create the SQLite database file with the following commaned: `touch ria.db`
-2) Scan all audio files: `cargo run --release -- --scan`
-3) List all detected audio files: `cargo run --release -- --print`
-4) Filter selected audio files with `--artist`, `--directory` and `--track` options
-5) Play filtered audio files by adding the `--play` flag
+1) Create the SQLite database file with the following commaned:
+  ```
+  touch ria.db
+  ```
+2) Scan all audio files, and print the results:
+  ```
+  cargo run --release -- --scan --print
+  ```
+3) Filter selected audio files with `--artist`, `--directory` and `--track` options
+4) Play filtered audio files by adding the `--play` flag
 
 
 ## Database
@@ -48,7 +53,10 @@ cargo install sea-orm-cli
 There are two steps to create the Ria SQLite database:
 
 1) Create an empty database file, for example: `touch ria.db`
-2) Run the database migration: `DATABASE_URL="sqlite://ria.db" sea-orm-cli migrate fresh`
+2) Run the database migration:
+```
+DATABASE_URL="sqlite://ria.db" sea-orm-cli migrate fresh
+```
 
 #### PostgreSQL or MySQL
 

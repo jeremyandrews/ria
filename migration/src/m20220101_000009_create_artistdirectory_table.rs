@@ -24,21 +24,37 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(ArtistDirectory::Created).timestamp().not_null())
-                    .col(ColumnDef::new(ArtistDirectory::Updated).timestamp().not_null())
-                    .col(ColumnDef::new(ArtistDirectory::ArtistId).integer().not_null())
-                    .foreign_key(
-                        ForeignKey::create()
-                        .name("fk-artist-artistid")
-                        .from(ArtistDirectory::Table, ArtistDirectory::ArtistId)
-                        .to(Artist::Table, Artist::ArtistId),
+                    .col(
+                        ColumnDef::new(ArtistDirectory::Created)
+                            .timestamp()
+                            .not_null(),
                     )
-                    .col(ColumnDef::new(ArtistDirectory::DirectoryId).integer().not_null())
+                    .col(
+                        ColumnDef::new(ArtistDirectory::Updated)
+                            .timestamp()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(ArtistDirectory::ArtistId)
+                            .integer()
+                            .not_null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-directory-directoryid")
-                        .from(ArtistDirectory::Table, ArtistDirectory::DirectoryId)
-                        .to(Directory::Table, Directory::DirectoryId)
+                            .name("fk-artist-artistid")
+                            .from(ArtistDirectory::Table, ArtistDirectory::ArtistId)
+                            .to(Artist::Table, Artist::ArtistId),
+                    )
+                    .col(
+                        ColumnDef::new(ArtistDirectory::DirectoryId)
+                            .integer()
+                            .not_null(),
+                    )
+                    .foreign_key(
+                        ForeignKey::create()
+                            .name("fk-directory-directoryid")
+                            .from(ArtistDirectory::Table, ArtistDirectory::DirectoryId)
+                            .to(Directory::Table, Directory::DirectoryId),
                     )
                     .to_owned(),
             )

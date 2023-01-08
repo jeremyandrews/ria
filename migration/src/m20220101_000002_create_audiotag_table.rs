@@ -24,9 +24,9 @@ impl MigrationTrait for Migration {
                     .col(ColumnDef::new(AudioTag::AudioId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-audio-audioid")
-                        .from(AudioTag::Table, AudioTag::AudioId)
-                        .to(Audio::Table, Audio::AudioId),
+                            .name("fk-audio-audioid")
+                            .from(AudioTag::Table, AudioTag::AudioId)
+                            .to(Audio::Table, Audio::AudioId),
                     )
                     .col(ColumnDef::new(AudioTag::Name).string().not_null())
                     .col(ColumnDef::new(AudioTag::Value).string().not_null())

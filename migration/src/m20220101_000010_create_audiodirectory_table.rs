@@ -1,7 +1,7 @@
 // One or more track can be associated with each directory.
 
-use super::m20220101_000008_create_directory_table::Directory;
 use super::m20220101_000001_create_audio_table::Audio;
+use super::m20220101_000008_create_directory_table::Directory;
 
 use sea_orm_migration::prelude::*;
 
@@ -24,21 +24,33 @@ impl MigrationTrait for Migration {
                             .auto_increment()
                             .primary_key(),
                     )
-                    .col(ColumnDef::new(AudioDirectory::Created).timestamp().not_null())
-                    .col(ColumnDef::new(AudioDirectory::Updated).timestamp().not_null())
-                    .col(ColumnDef::new(AudioDirectory::DirectoryId).integer().not_null())
+                    .col(
+                        ColumnDef::new(AudioDirectory::Created)
+                            .timestamp()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(AudioDirectory::Updated)
+                            .timestamp()
+                            .not_null(),
+                    )
+                    .col(
+                        ColumnDef::new(AudioDirectory::DirectoryId)
+                            .integer()
+                            .not_null(),
+                    )
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-directory-directoryid")
-                        .from(AudioDirectory::Table, AudioDirectory::DirectoryId)
-                        .to(Directory::Table, Directory::DirectoryId)
+                            .name("fk-directory-directoryid")
+                            .from(AudioDirectory::Table, AudioDirectory::DirectoryId)
+                            .to(Directory::Table, Directory::DirectoryId),
                     )
                     .col(ColumnDef::new(AudioDirectory::AudioId).integer().not_null())
                     .foreign_key(
                         ForeignKey::create()
-                        .name("fk-audio-audaioid")
-                        .from(AudioDirectory::Table, AudioDirectory::AudioId)
-                        .to(Audio::Table, Audio::AudioId)
+                            .name("fk-audio-audaioid")
+                            .from(AudioDirectory::Table, AudioDirectory::AudioId)
+                            .to(Audio::Table, Audio::AudioId),
                     )
                     .to_owned(),
             )

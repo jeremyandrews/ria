@@ -8,6 +8,7 @@ use symphonia::core::formats::FormatOptions;
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
+use tokio::sync::oneshot;
 use tracing::{event, instrument, Level};
 use walkdir::WalkDir;
 
@@ -236,6 +237,14 @@ pub(crate) async fn scan_media_files(config: &Config) {
         .as_ref()
         .expect("library must exist")
         .to_string();
+
+    let queue_config = config.clone();
+    let (queue_tx, queue_rx) = oneshot::channel::<bool>();
+    // Some items require an API lookup. We have to throttle our API requests, so some items will
+    // have to wait in a queue until we are able to process them.
+    let queue_handle =
+        tokio::spawn(async move { musicbrainz::process_queue(&queue_config, queue_rx).await });
+
     let walker = WalkDir::new(path).follow_links(true).into_iter();
     for (counter, entry) in walker.filter_entry(|e| !utils::is_hidden(e)).enumerate() {
         let metadata = match entry.as_ref() {
@@ -613,4 +622,9 @@ pub(crate) async fn scan_media_files(config: &Config) {
             }
         }
     }
+
+    // Tell thread processing queue that no new messages are coming.
+    let _ = queue_tx.send(true);
+    // Wait for the queue processing thread to finish.
+    let _ = queue_handle.await;
 }

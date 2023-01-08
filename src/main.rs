@@ -90,7 +90,7 @@ async fn main() -> Result<(), ()> {
     // Log all events to a file. @TODO: add configurable rolling file support.
     let logfile = RollingFileAppender::new(Rotation::NEVER, "./", "ria.log");
     // Log `INFO` and above to stdout.
-    let stdout = std::io::stdout.with_max_level(tracing::Level::INFO);
+    let stdout = std::io::stdout.with_max_level(tracing::Level::WARN);
     tracing_subscriber::fmt()
         .with_writer(stdout.and(logfile))
         .init();
@@ -99,27 +99,12 @@ async fn main() -> Result<(), ()> {
     musicbrainz_rs::config::set_user_agent(&USER_AGENT);
 
     if config.scan {
-        let process_config = config.clone();
-        // Spawn thread for processing the queue.
-        tokio::spawn(async move { musicbrainz::process_queue(&process_config).await });
-
-        // @TODO: make it possible to scan regularly, and whenever files are added/changed.
-        let mut scanned_media = false;
-
-        // Loop for scanning library.
-        loop {
-            event!(Level::TRACE, "top of main loop");
-
-            // For now we scan for files only one time when starting.
-            if !scanned_media {
-                scanned_media = true;
-                // Copy config structure to send to scan_media_files thread.
-                let scan_config = config.clone();
-                tokio::spawn(async move { media::scan_media_files(&scan_config).await });
-            }
-
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
-        }
+        // Spawn thread for scanning for media.
+        let spawn_config = config.clone();
+        let handle =
+            tokio::spawn(async move { media::scan_media_files(&spawn_config.clone()).await });
+        // @TODO: allow scan to happen in the background while other tasks happen.
+        let _ = handle.await;
     }
 
     if config.print {
