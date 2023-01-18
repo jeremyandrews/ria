@@ -360,90 +360,94 @@ pub(crate) async fn scan_media_files(config: &Config) {
                         }
                     };
 
-                    // @TODO: compare to database.
-                    let mut audio = audio::ActiveModel {
-                        uri: ActiveValue::Set(uri.clone()),
-                        path: ActiveValue::Set(match entry.as_ref().unwrap().path().parent() {
-                            Some(p) => p.display().to_string(),
-                            None => {
-                                event!(Level::WARN, "path.parent() returned none");
-                                "".to_string()
-                            }
-                        }),
-                        name: ActiveValue::Set(match path.file_name() {
-                            Some(f) => f.to_str().unwrap_or("").to_string(),
-                            None => {
-                                event!(Level::WARN, "path.file_name() returned nothing");
-                                "".to_string()
-                            }
-                        }),
-                        extension: ActiveValue::Set(extension.to_string()),
-                        // The following values will be replaced later if Symphonia is able to
-                        // identify the contents of this audio file.
-                        format: ActiveValue::Set("UNKNOWN".to_string()),
-                        duration: ActiveValue::Set(0),
-                        channels: ActiveValue::Set(0),
-                        bits: ActiveValue::Set(0),
-                        hertz: ActiveValue::Set(0),
-                        ..Default::default()
-                    };
-
-                    let src = std::fs::File::open(&path).expect("failed to open media");
-                    let mss = MediaSourceStream::new(Box::new(src), Default::default());
-
-                    // Add file suffix hint to speed of probe.
-                    let mut hint = Hint::new();
-                    if !extension.is_empty() {
-                        hint.with_extension(extension);
-                    }
-
-                    // Use the default options for metadata and format readers.
-                    let meta_opts: MetadataOptions = Default::default();
-                    let fmt_opts: FormatOptions = Default::default();
-
-                    // Probe the media source.
-                    let mut probed = match symphonia::default::get_probe()
-                        .format(&hint, mss, &fmt_opts, &meta_opts)
-                    {
-                        Ok(p) => p,
-                        Err(e) => {
-                            event!(Level::WARN, "Symphonia get_probe() failure: {}", e);
-                            continue;
-                        }
-                    };
-
-                    let tracks = probed.format.tracks();
-                    for (idx, track) in tracks.iter().enumerate() {
-                        assert!(idx == 0);
-                        let params = &track.codec_params;
-
-                        if let Some(codec) =
-                            symphonia::default::get_codecs().get_codec(params.codec)
-                        {
-                            audio.format = sea_orm::ActiveValue::Set(codec.long_name.to_string());
-                        }
-
-                        // Get duration.
-                        if let Some(n_frames) = params.n_frames {
-                            if let Some(tb) = params.time_base {
-                                audio.duration = sea_orm::ActiveValue::Set(
-                                    tb.calc_time(n_frames).seconds as i32,
-                                );
-                            }
-                        }
-                        // Get channels.
-                        audio.channels =
-                            sea_orm::ActiveValue::Set(params.channels.unwrap().count() as i32);
-                        audio.bits = sea_orm::ActiveValue::Set(match params.bits_per_sample {
-                            Some(b) => b as i32,
-                            None => 0,
-                        });
-                        audio.hertz = sea_orm::ActiveValue::Set(params.sample_rate.unwrap() as i32);
-                    }
-
+                    // For now we only scan a file one time -- if it's already been seen and
+                    // changes this logic will not update it.
                     // @TODO: Detect changes to the files, and update as needed.
                     // @TODO: Error handling.
                     if existing.is_none() {
+                        // @TODO: compare to database.
+                        let mut audio = audio::ActiveModel {
+                            uri: ActiveValue::Set(uri.clone()),
+                            path: ActiveValue::Set(match entry.as_ref().unwrap().path().parent() {
+                                Some(p) => p.display().to_string(),
+                                None => {
+                                    event!(Level::WARN, "path.parent() returned none");
+                                    "".to_string()
+                                }
+                            }),
+                            name: ActiveValue::Set(match path.file_name() {
+                                Some(f) => f.to_str().unwrap_or("").to_string(),
+                                None => {
+                                    event!(Level::WARN, "path.file_name() returned nothing");
+                                    "".to_string()
+                                }
+                            }),
+                            extension: ActiveValue::Set(extension.to_string()),
+                            // The following values will be replaced later if Symphonia is able to
+                            // identify the contents of this audio file.
+                            format: ActiveValue::Set("UNKNOWN".to_string()),
+                            duration: ActiveValue::Set(0),
+                            channels: ActiveValue::Set(0),
+                            bits: ActiveValue::Set(0),
+                            hertz: ActiveValue::Set(0),
+                            ..Default::default()
+                        };
+
+                        let src = std::fs::File::open(&path).expect("failed to open media");
+                        let mss = MediaSourceStream::new(Box::new(src), Default::default());
+
+                        // Add file suffix hint to speed of probe.
+                        let mut hint = Hint::new();
+                        if !extension.is_empty() {
+                            hint.with_extension(extension);
+                        }
+
+                        // Use the default options for metadata and format readers.
+                        let meta_opts: MetadataOptions = Default::default();
+                        let fmt_opts: FormatOptions = Default::default();
+
+                        // Probe the media source.
+                        let mut probed = match symphonia::default::get_probe()
+                            .format(&hint, mss, &fmt_opts, &meta_opts)
+                        {
+                            Ok(p) => p,
+                            Err(e) => {
+                                event!(Level::WARN, "Symphonia get_probe() failure: {}", e);
+                                continue;
+                            }
+                        };
+
+                        let tracks = probed.format.tracks();
+                        for (idx, track) in tracks.iter().enumerate() {
+                            assert!(idx == 0);
+                            let params = &track.codec_params;
+
+                            if let Some(codec) =
+                                symphonia::default::get_codecs().get_codec(params.codec)
+                            {
+                                audio.format =
+                                    sea_orm::ActiveValue::Set(codec.long_name.to_string());
+                            }
+
+                            // Get duration.
+                            if let Some(n_frames) = params.n_frames {
+                                if let Some(tb) = params.time_base {
+                                    audio.duration = sea_orm::ActiveValue::Set(
+                                        tb.calc_time(n_frames).seconds as i32,
+                                    );
+                                }
+                            }
+                            // Get channels.
+                            audio.channels =
+                                sea_orm::ActiveValue::Set(params.channels.unwrap().count() as i32);
+                            audio.bits = sea_orm::ActiveValue::Set(match params.bits_per_sample {
+                                Some(b) => b as i32,
+                                None => 0,
+                            });
+                            audio.hertz =
+                                sea_orm::ActiveValue::Set(params.sample_rate.unwrap() as i32);
+                        }
+
                         event!(Level::DEBUG, "Insert Audio File: {:?}", audio);
                         let new_audio = {
                             let db = database::connection(config).await;
@@ -578,47 +582,62 @@ pub(crate) async fn scan_media_files(config: &Config) {
         for result in results {
             let components = Path::new(&result).components();
             // @TODO: Error handling.
-            let name = components.last().unwrap();
+            let name = components.last().unwrap().as_os_str().to_str().unwrap();
 
-            let now = chrono::Utc::now().naive_utc();
-            let new_directory = directory::ActiveModel {
-                created: ActiveValue::Set(now.to_owned()),
-                updated: ActiveValue::Set(now.to_owned()),
-                // @TODO: Error handling.
-                name: ActiveValue::Set(name.as_os_str().to_str().unwrap().to_owned()),
-                path: ActiveValue::Set(result.to_owned()),
-                ..Default::default()
-            };
-            let created_directory = Directory::insert(new_directory)
-                .exec(db)
-                .await
-                .expect("failed to write directory to database");
-
-            // Find all audio files contained in the directory.
-            let audio_files = match Audio::find()
-                .filter(audio::Column::Path.like(&result))
-                .all(db)
-                .await
-            {
-                Ok(e) => e,
-                Err(e) => {
-                    event!(Level::WARN, "Artist::find() by path failure: {}", e);
-                    // @TODO: what to do?
-                    return;
+            let existing = {
+                match Directory::find()
+                    .filter(directory::Column::Name.eq(name))
+                    .one(db)
+                    .await
+                {
+                    Ok(e) => e,
+                    Err(e) => {
+                        event!(Level::WARN, "Audio::find() failure: {}", e);
+                        break;
+                    }
                 }
             };
-            for audio_file in audio_files {
-                let audio = audio_directory::ActiveModel {
+            if existing.is_none() {
+                let now = chrono::Utc::now().naive_utc();
+                let new_directory = directory::ActiveModel {
                     created: ActiveValue::Set(now.to_owned()),
-                    updated: ActiveValue::Set(now),
-                    directory_id: ActiveValue::Set(created_directory.last_insert_id),
-                    audio_id: ActiveValue::Set(audio_file.audio_id),
+                    updated: ActiveValue::Set(now.to_owned()),
+                    // @TODO: Error handling.
+                    name: ActiveValue::Set(name.to_owned()),
+                    path: ActiveValue::Set(result.to_owned()),
                     ..Default::default()
                 };
-                AudioDirectory::insert(audio)
+                let created_directory = Directory::insert(new_directory)
                     .exec(db)
                     .await
-                    .expect("failed to write audio_directory to database");
+                    .expect("failed to write directory to database");
+
+                // Find all audio files contained in the directory.
+                let audio_files = match Audio::find()
+                    .filter(audio::Column::Path.like(&result))
+                    .all(db)
+                    .await
+                {
+                    Ok(e) => e,
+                    Err(e) => {
+                        event!(Level::WARN, "Artist::find() by path failure: {}", e);
+                        // @TODO: what to do?
+                        return;
+                    }
+                };
+                for audio_file in audio_files {
+                    let audio = audio_directory::ActiveModel {
+                        created: ActiveValue::Set(now.to_owned()),
+                        updated: ActiveValue::Set(now),
+                        directory_id: ActiveValue::Set(created_directory.last_insert_id),
+                        audio_id: ActiveValue::Set(audio_file.audio_id),
+                        ..Default::default()
+                    };
+                    AudioDirectory::insert(audio)
+                        .exec(db)
+                        .await
+                        .expect("failed to write audio_directory to database");
+                }
             }
         }
     }

@@ -63,7 +63,7 @@ pub(crate) async fn process_queue(config: &Config, mut rx: Receiver<bool>) {
                 event!(Level::TRACE, "the queue is empty");
                 if rx.try_recv().is_ok() {
                     event!(
-                        Level::WARN,
+                        Level::INFO,
                         "process_queue received shutdown message, exiting"
                     );
                     break;
